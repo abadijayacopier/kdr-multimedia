@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Definitions for Gradients and Filters -->
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#121621" />
+      <stop offset="100%" stop-color="#08090c" />
+    </radialGradient>
+    
+    <!-- Neon Cyan-Blue Gradient -->
+    <linearGradient id="neonCyanBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="100%" stop-color="#4facfe" />
+    </linearGradient>
+
+    <!-- Neon Pink Gradient for Camera Accent -->
+    <linearGradient id="neonPink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff3366" />
+      <stop offset="100%" stop-color="#ff00a0" />
+    </linearGradient>
+    
+    <!-- Outer Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Maskable background -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)" />
+
+  <!-- Outer Neon Ring -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="url(#neonCyanBlue)" stroke-width="8" opacity="0.15" />
+  <circle cx="256" cy="256" r="190" fill="none" stroke="url(#neonCyanBlue)" stroke-width="4" filter="url(#glow)" opacity="0.8" />
+
+  <!-- Stylized Camera Body/Aperture -->
+  <g transform="translate(128, 128)">
+    <!-- Lens Base -->
+    <circle cx="128" cy="128" r="90" fill="#121621" stroke="url(#neonCyanBlue)" stroke-width="6" />
+    
+    <!-- Aperture Blades (Stylized) -->
+    <path d="M 128 38 L 190 70 L 170 128 Z" fill="url(#neonCyanBlue)" opacity="0.3" />
+    <path d="M 218 128 L 186 190 L 128 170 Z" fill="url(#neonCyanBlue)" opacity="0.3" />
+    <path d="M 128 218 L 66 186 L 86 128 Z" fill="url(#neonCyanBlue)" opacity="0.3" />
+    <path d="M 38 128 L 70 66 L 128 86 Z" fill="url(#neonCyanBlue)" opacity="0.3" />
+
+    <!-- Lens Glass Reflection -->
+    <path d="M 68 88 A 75 75 0 0 1 188 88" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.2" />
+
+    <!-- Camera Lens Red Dot / Recording Indicator -->
+    <circle cx="200" cy="80" r="10" fill="url(#neonPink)" filter="url(#glow)" />
+  </g>
+
+  <!-- Text KDR -->
+  <text x="256" y="245" 
+        font-family="'Outfit', 'Segoe UI', sans-serif" 
+        font-weight="900" 
+        font-size="80" 
+        fill="#ffffff" 
+        text-anchor="middle" 
+        letter-spacing="4"
+        filter="url(#glow)">
+    KDR
+  </text>
+  
+  <!-- Text MULTIMEDIA -->
+  <text x="256" y="325" 
+        font-family="'Outfit', 'Segoe UI', sans-serif" 
+        font-weight="700" 
+        font-size="28" 
+        fill="url(#neonCyanBlue)" 
+        text-anchor="middle" 
+        letter-spacing="8">
+    MULTIMEDIA
+  </text>
+</svg>

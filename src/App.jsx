@@ -1,0 +1,546 @@
+import React, { useState, useEffect } from 'react';
+import ReceiverView from './components/ReceiverView';
+import SenderView from './components/SenderView';
+
+// Helper to detect mobile devices
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+    || (window.innerWidth <= 768);
+};
+
+export default function App() {
+  const [role, setRole] = useState(null); // 'receiver' | 'sender'
+  const [roomId, setRoomId] = useState('');
+  const [roomsList, setRoomsList] = useState([]); // Multiple rooms for dashboard
+  const [viewMode, setViewMode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlLayout = params.get('layout');
+    if (urlLayout === 'grid') return 'grid';
+    if (urlLayout === 'single') return 'single';
+
+    const savedMode = localStorage.getItem('kdr_mirror_view_mode');
+    if (savedMode === 'grid') return 'grid';
+    return 'single';
+  });
+  const [inputRoomId, setInputRoomId] = useState('');
+  const [isObsView, setIsObsView] = useState(false);
+  const [serverInfo, setServerInfo] = useState(null);
+  const [customAlert, setCustomAlert] = useState(null); // { message, type }
+
+  const showAlert = (message, type = 'error') => {
+    setCustomAlert({ message, type });
+  };
+
+  useEffect(() => {
+    // 1. Parse URL Parameters
+    const params = new URLSearchParams(window.location.search);
+    const urlRole = params.get('role'); // 'sender' or null (which defaults to receiver/PC)
+    const urlRoom = params.get('room');
+    const urlView = params.get('view');
+
+    setIsObsView(urlView === 'obs');
+
+    const isMobile = isMobileDevice();
+
+    // Determine Role & Room ID
+    if (urlRole === 'sender' || isMobile) {
+      setRole('sender');
+      if (urlRoom) {
+        setRoomId(urlRoom.toUpperCase());
+      }
+    } else {
+      setRole('receiver');
+      let currentRoom = urlRoom;
+      if (!currentRoom) {
+        // Try localStorage first
+        const savedRoom = localStorage.getItem('kdr_mirror_room_id');
+        if (savedRoom) {
+          currentRoom = savedRoom;
+        } else {
+          // Generate a persistent, random 6-character room code excluding confusing characters (I, L, 1, O, 0)
+          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          let result = '';
+          for (let i = 0; i < 6; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          currentRoom = result;
+        }
+      }
+      setRoomId(currentRoom);
+      
+      // Load rooms list from localStorage if available
+      const savedList = localStorage.getItem('kdr_mirror_rooms_list');
+      if (savedList) {
+        try {
+          const parsed = JSON.parse(savedList);
+          if (parsed && parsed.length > 0) {
+            // Make sure currentRoom is included in the list
+            if (!parsed.includes(currentRoom)) {
+              parsed[0] = currentRoom;
+            }
+            setRoomsList(parsed);
+          } else {
+            setRoomsList([currentRoom]);
+          }
+        } catch (e) {
+          setRoomsList([currentRoom]);
+        }
+      } else {
+        setRoomsList([currentRoom]);
+      }
+      
+      // Update URL on PC to persist the room code on reload (keep other parameters like view or layout)
+      const queryParams = new URLSearchParams(window.location.search);
+      queryParams.set('room', currentRoom);
+      const newUrl = `${window.location.pathname}?${queryParams.toString()}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+
+    // 2. Fetch Server/Network Info for pairing
+    let intervalId = null;
+    const fetchServerInfo = async () => {
+      try {
+        const apiHost = window.location.port === '3000' 
+          ? 'http://localhost:8080' 
+          : ''; // Empty for unified production URL
+        const response = await fetch(`${apiHost}/api/info`);
+        const data = await response.json();
+        setServerInfo(data);
+        if (data && data.activeTunnelUrl && intervalId) {
+          clearInterval(intervalId);
+        }
+      } catch (err) {
+        console.warn('Could not fetch server network info. Using fallback IP config.', err);
+      }
+    };
+
+    fetchServerInfo();
+    
+    // Poll every 3 seconds to check if the SSH tunnel becomes active
+    intervalId = setInterval(fetchServerInfo, 3000);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []);
+
+  // Sync Room ID and Rooms List changes to localStorage
+  useEffect(() => {
+    if (role === 'receiver' && roomId) {
+      localStorage.setItem('kdr_mirror_room_id', roomId);
+    }
+  }, [roomId, role]);
+
+  useEffect(() => {
+    if (role === 'receiver' && roomsList.length > 0) {
+      localStorage.setItem('kdr_mirror_rooms_list', JSON.stringify(roomsList));
+    }
+  }, [roomsList, role]);
+
+  useEffect(() => {
+    if (role === 'receiver') {
+      localStorage.setItem('kdr_mirror_view_mode', viewMode);
+
+      // Update URL query parameters
+      const params = new URLSearchParams(window.location.search);
+      const currentLayout = params.get('layout');
+      
+      if (viewMode === 'grid' && currentLayout !== 'grid') {
+        params.set('layout', 'grid');
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.replaceState(null, '', newUrl);
+      } else if (viewMode === 'single' && currentLayout === 'grid') {
+        params.delete('layout');
+        let queryStr = params.toString();
+        const newUrl = `${window.location.pathname}${queryStr ? `?${queryStr}` : ''}`;
+        window.history.replaceState(null, '', newUrl);
+      }
+    }
+  }, [viewMode, role]);
+
+  // Handler to change room ID in single view
+  const handleRoomIdChange = (newId) => {
+    const cleanId = newId.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    if (cleanId.length >= 3) {
+      setRoomId(cleanId);
+      
+      // Update roomsList
+      if (roomsList.length > 0) {
+        setRoomsList([cleanId, ...roomsList.slice(1)]);
+      } else {
+        setRoomsList([cleanId]);
+      }
+
+      // Update URL
+      const params = new URLSearchParams(window.location.search);
+      const urlView = params.get('view');
+      const newUrl = `${window.location.pathname}?room=${cleanId}${urlView ? `&view=${urlView}` : ''}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+  };
+
+  // Handler to change a specific room ID in grid view dashboard
+  const handleGridRoomIdChange = (oldId, newId) => {
+    const cleanId = newId.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    if (cleanId.length >= 3) {
+      // Prevent duplicates
+      if (roomsList.includes(cleanId) && cleanId !== oldId) {
+        showAlert('ID Room sudah digunakan di kamera lain!');
+        return;
+      }
+      
+      const newList = roomsList.map(rid => rid === oldId ? cleanId : rid);
+      setRoomsList(newList);
+
+      // If we edited the primary room (first in the list), update the main roomId state & URL
+      if (oldId === roomId) {
+        setRoomId(cleanId);
+        const params = new URLSearchParams(window.location.search);
+        const urlView = params.get('view');
+        const newUrl = `${window.location.pathname}?room=${cleanId}${urlView ? `&view=${urlView}` : ''}`;
+        window.history.replaceState(null, '', newUrl);
+      }
+    }
+  };
+
+  const handleJoinMobile = (e) => {
+    e.preventDefault();
+    if (inputRoomId.trim().length >= 4) {
+      setRoomId(inputRoomId.trim().toUpperCase());
+    }
+  };
+
+  if (!role) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#08090c', color: '#fff' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', animation: 'blink 1s infinite alternate' }}>🌀</div>
+          <p style={{ marginTop: '1rem', color: '#8f9cae' }}>Menyiapkan KDR Multimedia...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If role is sender (mobile) but we don't have a roomId, show room entry form
+  if (role === 'sender' && !roomId) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        minHeight: '100vh', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        backgroundColor: '#08090c', 
+        color: '#fff',
+        padding: '1.5rem',
+        boxSizing: 'border-box'
+      }}>
+        <div className="glass-panel" style={{ padding: '2rem', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📹</div>
+          <h2 className="gradient-text glow-text" style={{ fontSize: '1.6rem', marginBottom: '0.5rem' }}>KDR Multimedia</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '2rem' }}>
+            Hubungkan kamera HP Anda ke PC. Masukkan kode room yang tertera pada layar PC Anda.
+          </p>
+
+          <form onSubmit={handleJoinMobile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Kode Room PC</label>
+              <input
+                type="text"
+                maxLength="8"
+                placeholder="CONTOH: 3UETN9"
+                value={inputRoomId}
+                onChange={(e) => setInputRoomId(e.target.value.toUpperCase())}
+                style={{
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  fontSize: '1.3rem',
+                  color: 'var(--accent-cyan)',
+                  textAlign: 'center',
+                  fontFamily: 'monospace',
+                  letterSpacing: '4px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--accent-cyan)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={inputRoomId.trim().length < 4}
+              className="btn btn-primary"
+              style={{
+                padding: '1rem',
+                fontSize: '1rem',
+                fontWeight: 600,
+                marginTop: '0.5rem',
+                opacity: inputRoomId.trim().length < 4 ? 0.5 : 1,
+                cursor: inputRoomId.trim().length < 4 ? 'not-allowed' : 'pointer'
+              }}
+            >
+              🚀 Hubungkan Kamera
+            </button>
+          </form>
+
+          <div style={{ marginTop: '2rem', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            Dev: supriyanto abadi jaya
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (role === 'sender') {
+    return <SenderView roomId={roomId} />;
+  }
+
+  // Receiver Mode: Multi-Camera Dashboard (Grid View)
+  if (viewMode === 'grid' && !isObsView) {
+    return (
+      <>
+        <div className="app-container">
+        {/* Unified Dashboard Header */}
+        <header className="app-header" style={{ marginBottom: '1.5rem' }}>
+          <div>
+            <h1 className="gradient-text glow-text" style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>📹</span> KDR Multi-Camera Dashboard
+            </h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+              Monitoring banyak kamera HP sekaligus dalam satu layar
+            </p>
+          </div>
+          <div className="app-header-controls">
+            <button 
+              onClick={() => {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                let result = '';
+                for (let i = 0; i < 6; i++) {
+                  result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                setRoomsList([...roomsList, result]);
+              }}
+              className="btn btn-primary"
+              style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
+            >
+              ➕ Tambah Kamera
+            </button>
+            <button 
+              onClick={() => setViewMode('single')}
+              className="btn btn-secondary"
+              style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
+            >
+              📺 Mode Single
+            </button>
+          </div>
+        </header>
+
+        {/* Camera Grid */}
+        <div className="camera-grid" style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', 
+          gap: '1.5rem',
+          flex: 1
+        }}>
+          {roomsList.map(id => (
+            <ReceiverView 
+              key={id} 
+              roomId={id} 
+              serverInfo={serverInfo} 
+              layoutMode="grid" 
+              onChangeRoomId={(newId) => handleGridRoomIdChange(id, newId)}
+              onClose={() => {
+                if (roomsList.length === 1) {
+                  showAlert('Minimal harus ada 1 kamera di dashboard.');
+                  return;
+                }
+                setRoomsList(roomsList.filter(rid => rid !== id));
+              }}
+            />
+          ))}
+        </div>
+
+        <footer style={{ 
+          marginTop: '2.5rem', 
+          paddingTop: '1.2rem', 
+          borderTop: '1px solid var(--border-color)', 
+          textAlign: 'center', 
+          fontSize: '0.85rem', 
+          color: 'var(--text-secondary)' 
+        }}>
+          <span>Developed by </span>
+          <strong style={{ color: 'var(--accent-cyan)', textShadow: '0 0 10px rgba(0, 242, 254, 0.3)' }}>supriyanto abadi jaya</strong>
+          <span> | KDR Multimedia © 2026</span>
+        </footer>
+      </div>
+      {customAlert && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(5, 7, 12, 0.65)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fadeIn 0.25s ease-out'
+        }}>
+          <div className="glass-panel" style={{
+            width: '90%',
+            maxWidth: '420px',
+            padding: '2rem',
+            textAlign: 'center',
+            borderColor: customAlert.type === 'error' ? 'rgba(255, 51, 102, 0.4)' : 'rgba(0, 242, 254, 0.4)',
+            boxShadow: customAlert.type === 'error' ? '0 8px 32px rgba(255, 51, 102, 0.2)' : '0 8px 32px rgba(0, 242, 254, 0.2)',
+            transform: 'scale(1)',
+            animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.2rem'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: customAlert.type === 'error' ? 'rgba(255, 51, 102, 0.1)' : 'rgba(0, 242, 254, 0.1)',
+              border: `2px solid ${customAlert.type === 'error' ? 'var(--accent-red)' : 'var(--accent-cyan)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.8rem',
+              boxShadow: `0 0 15px ${customAlert.type === 'error' ? 'rgba(255, 51, 102, 0.3)' : 'rgba(0, 242, 254, 0.3)'}`
+            }}>
+              {customAlert.type === 'error' ? '⚠️' : 'ℹ️'}
+            </div>
+            
+            <div>
+              <h4 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: '#fff', fontWeight: 600 }}>
+                {customAlert.type === 'error' ? 'Pemberitahuan' : 'Informasi'}
+              </h4>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5', margin: 0 }}>
+                {customAlert.message}
+              </p>
+            </div>
+
+            <button 
+              onClick={() => setCustomAlert(null)}
+              className="btn btn-primary"
+              style={{
+                background: customAlert.type === 'error' ? 'linear-gradient(135deg, #ff3366 0%, #ff6688 100%)' : undefined,
+                boxShadow: customAlert.type === 'error' ? '0 4px 15px rgba(255, 51, 102, 0.3)' : undefined,
+                padding: '0.6rem 2rem',
+                fontSize: '0.9rem',
+                minWidth: '120px',
+                borderRadius: '8px',
+                marginTop: '0.5rem',
+                border: 'none',
+                color: '#fff',
+                cursor: 'pointer'
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+      </>
+    );
+  }
+
+  // Single Camera View (Default)
+  return (
+    <>
+      <ReceiverView 
+        roomId={roomId} 
+        serverInfo={serverInfo} 
+        isObsView={isObsView} 
+        onChangeRoomId={handleRoomIdChange}
+        onSwitchToGrid={() => setViewMode('grid')}
+      />
+      {customAlert && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(5, 7, 12, 0.65)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fadeIn 0.25s ease-out'
+        }}>
+          <div className="glass-panel" style={{
+            width: '90%',
+            maxWidth: '420px',
+            padding: '2rem',
+            textAlign: 'center',
+            borderColor: customAlert.type === 'error' ? 'rgba(255, 51, 102, 0.4)' : 'rgba(0, 242, 254, 0.4)',
+            boxShadow: customAlert.type === 'error' ? '0 8px 32px rgba(255, 51, 102, 0.2)' : '0 8px 32px rgba(0, 242, 254, 0.2)',
+            transform: 'scale(1)',
+            animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.2rem'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: customAlert.type === 'error' ? 'rgba(255, 51, 102, 0.1)' : 'rgba(0, 242, 254, 0.1)',
+              border: `2px solid ${customAlert.type === 'error' ? 'var(--accent-red)' : 'var(--accent-cyan)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.8rem',
+              boxShadow: `0 0 15px ${customAlert.type === 'error' ? 'rgba(255, 51, 102, 0.3)' : 'rgba(0, 242, 254, 0.3)'}`
+            }}>
+              {customAlert.type === 'error' ? '⚠️' : 'ℹ️'}
+            </div>
+            
+            <div>
+              <h4 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: '#fff', fontWeight: 600 }}>
+                {customAlert.type === 'error' ? 'Pemberitahuan' : 'Informasi'}
+              </h4>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5', margin: 0 }}>
+                {customAlert.message}
+              </p>
+            </div>
+
+            <button 
+              onClick={() => setCustomAlert(null)}
+              className="btn btn-primary"
+              style={{
+                background: customAlert.type === 'error' ? 'linear-gradient(135deg, #ff3366 0%, #ff6688 100%)' : undefined,
+                boxShadow: customAlert.type === 'error' ? '0 4px 15px rgba(255, 51, 102, 0.3)' : undefined,
+                padding: '0.6rem 2rem',
+                fontSize: '0.9rem',
+                minWidth: '120px',
+                borderRadius: '8px',
+                marginTop: '0.5rem',
+                border: 'none',
+                color: '#fff',
+                cursor: 'pointer'
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+
