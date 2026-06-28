@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReceiverView from './components/ReceiverView';
 import SenderView from './components/SenderView';
+import SettingsModal from './components/SettingsModal';
 
 // Helper to detect mobile devices
 const isMobileDevice = () => {
@@ -11,6 +12,7 @@ const isMobileDevice = () => {
 export default function App() {
   const [role, setRole] = useState(null); // 'receiver' | 'sender'
   const [roomId, setRoomId] = useState('');
+  const [roomPin, setRoomPin] = useState('');
   const [roomsList, setRoomsList] = useState([]); // Multiple rooms for dashboard
   const [viewMode, setViewMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -23,9 +25,11 @@ export default function App() {
     return 'single';
   });
   const [inputRoomId, setInputRoomId] = useState('');
+  const [inputPin, setInputPin] = useState('');
   const [isObsView, setIsObsView] = useState(false);
   const [serverInfo, setServerInfo] = useState(null);
   const [customAlert, setCustomAlert] = useState(null); // { message, type }
+  const [showSettings, setShowSettings] = useState(false);
 
   const showAlert = (message, type = 'error') => {
     setCustomAlert({ message, type });
@@ -36,6 +40,7 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const urlRole = params.get('role'); // 'sender' or null (which defaults to receiver/PC)
     const urlRoom = params.get('room');
+    const urlPin = params.get('pin');
     const urlView = params.get('view');
 
     setIsObsView(urlView === 'obs');
@@ -47,6 +52,9 @@ export default function App() {
       setRole('sender');
       if (urlRoom) {
         setRoomId(urlRoom.toUpperCase());
+      }
+      if (urlPin) {
+        setRoomPin(urlPin);
       }
     } else {
       setRole('receiver');
@@ -205,8 +213,9 @@ export default function App() {
 
   const handleJoinMobile = (e) => {
     e.preventDefault();
-    if (inputRoomId.trim().length >= 4) {
+    if (inputRoomId.trim().length >= 3 && inputPin.trim().length >= 4) {
       setRoomId(inputRoomId.trim().toUpperCase());
+      setRoomPin(inputPin.trim());
     }
   };
 
@@ -267,18 +276,44 @@ export default function App() {
                 onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
               />
             </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
+              <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>PIN (4 Digit)</label>
+              <input
+                type="text"
+                maxLength="4"
+                placeholder="1234"
+                value={inputPin}
+                onChange={(e) => setInputPin(e.target.value.replace(/[^0-9]/g, ''))}
+                style={{
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  fontSize: '1.3rem',
+                  color: 'var(--accent-cyan)',
+                  textAlign: 'center',
+                  fontFamily: 'monospace',
+                  letterSpacing: '8px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--accent-cyan)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+              />
+            </div>
 
             <button
               type="submit"
-              disabled={inputRoomId.trim().length < 4}
+              disabled={inputRoomId.trim().length < 3 || inputPin.trim().length < 4}
               className="btn btn-primary"
               style={{
                 padding: '1rem',
                 fontSize: '1rem',
                 fontWeight: 600,
                 marginTop: '0.5rem',
-                opacity: inputRoomId.trim().length < 4 ? 0.5 : 1,
-                cursor: inputRoomId.trim().length < 4 ? 'not-allowed' : 'pointer'
+                opacity: (inputRoomId.trim().length < 3 || inputPin.trim().length < 4) ? 0.5 : 1,
+                cursor: (inputRoomId.trim().length < 3 || inputPin.trim().length < 4) ? 'not-allowed' : 'pointer'
               }}
             >
               🚀 Hubungkan Kamera
@@ -294,7 +329,7 @@ export default function App() {
   }
 
   if (role === 'sender') {
-    return <SenderView roomId={roomId} />;
+    return <SenderView roomId={roomId} roomPin={roomPin} />;
   }
 
   // Receiver Mode: Multi-Camera Dashboard (Grid View)
@@ -326,6 +361,13 @@ export default function App() {
               style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
             >
               ➕ Tambah Kamera
+            </button>
+            <button 
+              onClick={() => setShowSettings(true)}
+              className="btn btn-secondary"
+              style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
+            >
+              ⚙️ Pengaturan
             </button>
             <button 
               onClick={() => setViewMode('single')}
@@ -450,6 +492,12 @@ export default function App() {
           </div>
         </div>
       )}
+      {showSettings && (
+        <SettingsModal 
+          onClose={() => setShowSettings(false)} 
+          showAlert={showAlert} 
+        />
+      )}
       </>
     );
   }
@@ -464,6 +512,39 @@ export default function App() {
         onChangeRoomId={handleRoomIdChange}
         onSwitchToGrid={() => setViewMode('grid')}
       />
+      
+      {!isObsView && (
+        <button
+          onClick={() => setShowSettings(true)}
+          className="btn btn-secondary"
+          style={{
+            position: 'fixed',
+            bottom: '1.5rem',
+            right: '1.5rem',
+            padding: '0.8rem',
+            borderRadius: '50%',
+            width: '50px',
+            height: '50px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.2rem',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+            zIndex: 9998
+          }}
+          title="Pengaturan"
+        >
+          ⚙️
+        </button>
+      )}
+
+      {showSettings && (
+        <SettingsModal 
+          onClose={() => setShowSettings(false)} 
+          showAlert={showAlert} 
+        />
+      )}
+
       {customAlert && (
         <div style={{
           position: 'fixed',

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ConnectionGuide from './ConnectionGuide';
 import QRCode from 'qrcode';
 
-function ConnectionGuideCompact({ roomId, serverInfo }) {
+function ConnectionGuideCompact({ roomId, serverInfo, pin }) {
   const [qrUrl, setQrUrl] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -12,6 +12,9 @@ function ConnectionGuideCompact({ roomId, serverInfo }) {
   
   const isTunnel = window.location.hostname.includes('.') && !window.location.hostname.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/);
   
+  // Try to get roomPin from parent props or generate a fallback
+  const roomPin = pin || '1234';
+
   const mobileBaseUrl = serverInfo && serverInfo.activeTunnelUrl
     ? serverInfo.activeTunnelUrl
     : (isTunnel 
@@ -19,7 +22,7 @@ function ConnectionGuideCompact({ roomId, serverInfo }) {
         : (serverInfo ? `${activeProtocol}//${serverInfo.localIp}:${activePort}` : `${activeProtocol}//${window.location.hostname}:${activePort}`)
       );
     
-  const mobileUrl = `${mobileBaseUrl}/?room=${roomId}&role=sender`;
+  const mobileUrl = `${mobileBaseUrl}/?room=${roomId}&pin=${roomPin}&role=sender`;
 
   useEffect(() => {
     QRCode.toDataURL(mobileUrl, {
@@ -87,7 +90,16 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
   // Settings states to send to mobile
   const [selectedCamera, setSelectedCamera] = useState('environment'); // 'user' | 'environment'
   const [selectedResolution, setSelectedResolution] = useState('1080p'); // '720p' | '1080p' | '4k'
+  const [selectedFps, setSelectedFps] = useState(30);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+  const [isTallyActive, setIsTallyActive] = useState(false);
+  const [isMutedLocally, setIsMutedLocally] = useState(true);
   const [isFlashOn, setIsFlashOn] = useState(false);
+
+  // Generate a random 4-digit PIN for this room session
+  const [roomPin] = useState(() => {
+    return String(Math.floor(1000 + Math.random() * 9000));
+  });
 
   // Zoom, focus, pause and phone capabilities
   const [isPaused, setIsPaused] = useState(false);
@@ -104,11 +116,20 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
   // For Room ID customization
   const [isEditingId, setIsEditingId] = useState(false);
   const [tempId, setTempId] = useState(roomId);
+  const [obsCopied, setObsCopied] = useState(false);
 
   // Sync tempId if roomId changes from parent
   useEffect(() => {
     setTempId(roomId);
   }, [roomId]);
+
+  const copyObsUrl = () => {
+    const port = window.location.port || '8080';
+    const obsUrl = `${window.location.protocol}//${window.location.hostname}:${port}/?room=${roomId}&view=obs`;
+    navigator.clipboard.writeText(obsUrl);
+    setObsCopied(true);
+    setTimeout(() => setObsCopied(false), 1500);
+  };
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -157,7 +178,7 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
       ws.send(JSON.stringify({
         type: 'join',
         roomId,
-        data: { clientType: 'receiver' }
+        data: { clientType: 'receiver', pin: roomPin }
       }));
     };
 
@@ -175,16 +196,6 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
           case 'sender-joined':
             console.log('Mobile sender joined the room!');
             setPhoneStatus('online');
-            setIsPaused(false);
-            setZoomVal(1.0);
-            // Request sender to start streaming with current PC preferences
-            sendControlCommand('apply-settings', {
-              camera: selectedCamera,
-              resolution: selectedResolution,
-              flash: isFlashOn,
-              zoom: 1.0,
-              focusMode: focusMode
-            });
             break;
 
           case 'sender-disconnected':
@@ -222,6 +233,16 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
                 const defFocus = data.value.focusModes.includes('continuous') ? 'continuous' : data.value.focusModes[0];
                 setFocusMode(defFocus);
               }
+            } else if (data.action === 'active-settings') {
+              if (data.value.camera) setSelectedCamera(data.value.camera);
+              if (data.value.resolution) setSelectedResolution(data.value.resolution);
+              if (data.value.fps !== undefined) setSelectedFps(data.value.fps);
+              if (data.value.audio !== undefined) setIsAudioEnabled(data.value.audio);
+              if (data.value.tally !== undefined) setIsTallyActive(data.value.tally);
+              if (data.value.flash !== undefined) setIsFlashOn(data.value.flash);
+              if (data.value.zoom !== undefined) setZoomVal(data.value.zoom);
+              if (data.value.focusMode) setFocusMode(data.value.focusMode);
+              if (data.value.isPaused !== undefined) setIsPaused(data.value.isPaused);
             } else if (data.action === 'toggle-pause') {
               setIsPaused(data.value);
             }
@@ -298,6 +319,7 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
       console.log('Received remote media stream track!');
       if (videoRef.current) {
         videoRef.current.srcObject = event.streams[0];
+        videoRef.current.play().catch(e => console.error("Play failed:", e));
         setPhoneStatus('streaming');
       }
     };
@@ -556,7 +578,7 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
           ref={videoRef}
           autoPlay
           playsInline
-          muted
+          muted={false}
           style={{
             width: '100%',
             height: '100%',
@@ -677,6 +699,38 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
             </span>
           )}
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            {isAudioEnabled && (
+              <button 
+                onClick={() => setIsMutedLocally(!isMutedLocally)}
+                style={{
+                  background: 'none', border: 'none', color: isMutedLocally ? 'var(--accent-red)' : 'var(--accent-green)', cursor: 'pointer', fontSize: '1rem', padding: '0 4px'
+                }}
+                title={isMutedLocally ? 'Suara di-mute di PC (Klik untuk Unmute)' : 'Suara aktif di PC (Klik untuk Mute)'}
+              >
+                {isMutedLocally ? '🔇' : '🔊'}
+              </button>
+            )}
+            <button
+              onClick={copyObsUrl}
+              style={{
+                background: obsCopied ? 'rgba(46, 213, 115, 0.15)' : 'rgba(0, 242, 254, 0.1)',
+                border: obsCopied ? '1px solid var(--accent-green)' : '1px solid var(--accent-cyan)',
+                color: obsCopied ? 'var(--accent-green)' : 'var(--accent-cyan)',
+                cursor: 'pointer',
+                fontSize: '0.65rem',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                marginRight: '0.2rem',
+                fontWeight: 'bold',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.2rem'
+              }}
+              title="Salin Browser Source URL untuk OBS Studio"
+            >
+              {obsCopied ? '✔️ Tersalin!' : '🔗 OBS'}
+            </button>
             <span className={`badge-dot ${phoneStatus === 'streaming' ? 'badge-connected' : 'badge-disconnected'}`} style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: phoneStatus === 'streaming' ? 'var(--accent-green)' : 'var(--accent-red)' }} />
             <button 
               onClick={onClose} 
@@ -719,7 +773,7 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
             ref={videoRef}
             autoPlay
             playsInline
-            muted
+            muted={isMutedLocally}
             className="mirrored-video"
             style={{ 
               display: phoneStatus === 'streaming' ? 'block' : 'none', 
@@ -736,7 +790,10 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
 
           {phoneStatus !== 'streaming' && (
             <div style={{ padding: '1rem', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
-              <ConnectionGuideCompact roomId={roomId} serverInfo={serverInfo} />
+              <ConnectionGuideCompact roomId={roomId} serverInfo={serverInfo} pin={roomPin} />
+              <div style={{ marginTop: '0.5rem', background: 'rgba(0,0,0,0.6)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', color: 'var(--accent-cyan)', fontWeight: 'bold', fontFamily: 'monospace', border: '1px solid rgba(0, 242, 254, 0.2)' }}>
+                PIN: {roomPin}
+              </div>
             </div>
           )}
         </div>
@@ -744,7 +801,7 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
         {/* Card Footer */}
         {phoneStatus === 'streaming' ? (
           <div style={{ padding: '0.8rem', background: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '0.6rem', borderTop: '1px solid var(--border-color)' }}>
-            <div style={{ display: 'flex', justifycontent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
               <span>{videoStats.resolution} @ {videoStats.fps} FPS</span>
               <span style={{ color: 'var(--accent-green)' }}>P2P (WebRTC)</span>
             </div>
@@ -767,6 +824,7 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
               >
                 <option value="environment">Rear</option>
                 <option value="user">Front</option>
+                <option value="screen">Screen</option>
               </select>
 
               <button
@@ -890,7 +948,7 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
               ref={videoRef}
               autoPlay
               playsInline
-              muted
+              muted={isMutedLocally}
               className="mirrored-video"
               style={{ 
                 display: phoneStatus === 'streaming' ? 'block' : 'none',
@@ -930,7 +988,12 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
 
           {/* Connection Guide for Setup */}
           {phoneStatus !== 'streaming' && (
-            <ConnectionGuide roomId={roomId} serverInfo={serverInfo} />
+            <div style={{ position: 'relative' }}>
+              <ConnectionGuide roomId={roomId} serverInfo={serverInfo} pin={roomPin} />
+              <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.8)', padding: '6px 14px', borderRadius: '12px', fontSize: '0.9rem', color: 'var(--accent-cyan)', fontWeight: 'bold', fontFamily: 'monospace', border: '1px solid var(--accent-cyan)', boxShadow: '0 4px 15px rgba(0, 242, 254, 0.2)' }}>
+                PIN: {roomPin}
+              </div>
+            </div>
           )}
         </div>
 
@@ -1023,6 +1086,64 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
             </div>
           )}
 
+          {/* Desktop Audio Monitor Toggle */}
+          {isAudioEnabled && !isObsView && (
+            <div style={{ padding: '0.5rem 1rem', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Monitoring Audio di PC:</span>
+              <button 
+                onClick={() => setIsMutedLocally(!isMutedLocally)}
+                className={`btn ${isMutedLocally ? 'btn-danger' : 'btn-primary'}`}
+                style={{ padding: '0.2rem 0.8rem', fontSize: '0.75rem' }}
+              >
+                {isMutedLocally ? '🔇 Muted' : '🔊 Unmuted'}
+              </button>
+            </div>
+          )}
+
+          {/* OBS Studio Integration Link */}
+          <div className="control-group" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '0.8rem' }}>
+            <label>Integrasi OBS Studio</label>
+            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.3rem' }}>
+              <input 
+                type="text" 
+                readOnly
+                value={`${window.location.protocol}//${window.location.hostname}:${window.location.port || '8080'}/?room=${roomId}&view=obs`}
+                style={{ 
+                  background: 'rgba(0, 0, 0, 0.4)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '8px', 
+                  color: 'var(--text-secondary)', 
+                  padding: '0.4rem 0.6rem', 
+                  fontSize: '0.75rem', 
+                  flex: 1,
+                  fontFamily: 'monospace',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  outline: 'none'
+                }} 
+              />
+              <button 
+                onClick={copyObsUrl}
+                className="btn"
+                style={{ 
+                  padding: '0.4rem 0.6rem', 
+                  fontSize: '0.75rem', 
+                  minWidth: '70px',
+                  background: obsCopied ? 'rgba(46, 213, 115, 0.2)' : 'rgba(255,255,255,0.05)',
+                  borderColor: obsCopied ? 'var(--accent-green)' : 'var(--border-color)',
+                  color: obsCopied ? 'var(--accent-green)' : 'var(--text-primary)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {obsCopied ? 'Tersalin' : 'Salin'}
+              </button>
+            </div>
+            <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.65rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>
+              Tambahkan sebagai <b>Browser Source</b> di OBS (Resolusi: 1920x1080).
+            </p>
+          </div>
+
           {/* Media Capture Actions */}
           <div className="control-group">
             <label>Pengambilan Media</label>
@@ -1055,31 +1176,86 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
             >
               <option value="environment">Kamera Belakang (Utama)</option>
               <option value="user">Kamera Depan (Selfie)</option>
+              <option value="screen">Berbagi Layar (Screen Share)</option>
             </select>
           </div>
 
           <div className="control-group">
-            <label>Resolusi Kamera</label>
-            <select
-              value={selectedResolution}
-              onChange={handleResolutionChange}
-              disabled={phoneStatus === 'offline'}
-              className="control-select"
-            >
-              <option value="720p">720p (HD - Hemat Bandwidth)</option>
-              <option value="1080p">1080p (Full HD - Direkomendasikan)</option>
-              <option value="4k">4K (Ultra HD - Membutuhkan USB)</option>
-            </select>
+            <label>Resolusi & FPS</label>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <select
+                value={selectedResolution}
+                onChange={handleResolutionChange}
+                disabled={phoneStatus === 'offline'}
+                className="control-select"
+                style={{ flex: 2 }}
+              >
+                <option value="720p">720p (HD)</option>
+                <option value="1080p">1080p (Full HD)</option>
+                <option value="4k">4K (Ultra HD)</option>
+              </select>
+              <select
+                value={selectedFps}
+                onChange={(e) => {
+                  const fps = parseInt(e.target.value);
+                  setSelectedFps(fps);
+                  sendControlCommand('set-fps', fps);
+                }}
+                disabled={phoneStatus === 'offline'}
+                className="control-select"
+                style={{ flex: 1 }}
+              >
+                <option value={30}>30 FPS</option>
+                <option value={60}>60 FPS</option>
+              </select>
+            </div>
           </div>
 
           <div className="control-group">
-            <label>Kontrol Flashlight</label>
+            <label>Fitur Tambahan</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <button
+                onClick={() => {
+                  const nextAudio = !isAudioEnabled;
+                  setIsAudioEnabled(nextAudio);
+                  sendControlCommand('toggle-audio', nextAudio);
+                }}
+                disabled={phoneStatus === 'offline'}
+                className={`btn ${isAudioEnabled ? 'btn-primary' : 'btn-secondary'}`}
+                style={{
+                  background: isAudioEnabled ? 'rgba(46, 213, 115, 0.2)' : 'rgba(255,255,255,0.05)',
+                  borderColor: isAudioEnabled ? 'var(--accent-green)' : 'var(--border-color)',
+                  color: isAudioEnabled ? 'var(--accent-green)' : 'var(--text-primary)'
+                }}
+              >
+                {isAudioEnabled ? '🎙️ Mic ON' : '🔇 Mic OFF'}
+              </button>
+
+              <button
+                onClick={() => {
+                  const nextTally = !isTallyActive;
+                  setIsTallyActive(nextTally);
+                  sendControlCommand('tally-light', nextTally);
+                }}
+                disabled={phoneStatus === 'offline'}
+                className={`btn ${isTallyActive ? 'btn-danger' : 'btn-secondary'}`}
+                style={{
+                  background: isTallyActive ? 'rgba(255, 51, 102, 0.2)' : 'rgba(255,255,255,0.05)',
+                  borderColor: isTallyActive ? 'var(--accent-red)' : 'var(--border-color)',
+                  color: isTallyActive ? 'var(--accent-red)' : 'var(--text-primary)'
+                }}
+              >
+                🔴 Tally {isTallyActive ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            
             <button
               onClick={handleFlashToggle}
               disabled={phoneStatus === 'offline'}
               className={`btn ${isFlashOn ? 'btn-primary' : 'btn-secondary'}`}
               style={{
                 width: '100%',
+                marginTop: '0.5rem',
                 background: isFlashOn ? 'rgba(0, 242, 254, 0.2)' : 'rgba(255,255,255,0.05)',
                 borderColor: isFlashOn ? 'var(--accent-cyan)' : 'var(--border-color)',
                 color: isFlashOn ? 'var(--accent-cyan)' : 'var(--text-primary)'

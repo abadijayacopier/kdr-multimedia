@@ -26,6 +26,7 @@ const app = express();
 const port = process.env.PORT || 8080;
 
 // Enable CORS for frontend development
+app.use(express.json());
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
@@ -34,6 +35,36 @@ app.use((req, res, next) => {
 
 // Serve production client build files if they exist
 app.use(express.static(path.join(__dirname, '../dist')));
+
+const configPath = path.join(__dirname, 'config.json');
+
+function getCloudflareToken() {
+  try {
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (config.cloudflareToken) return config.cloudflareToken;
+    }
+  } catch (err) {
+    console.error('[!] Error reading config:', err);
+  }
+  return '44d4807b-48e8-4a62-b504-28bcc139ac23'; // default fallback
+}
+
+function getCloudflareDomain() {
+  try {
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (config.cloudflareDomain) {
+        let domain = config.cloudflareDomain.trim();
+        if (!domain.startsWith('http')) {
+          domain = 'https://' + domain;
+        }
+        return domain;
+      }
+    }
+  } catch (err) {}
+  return "CLOUDFLARE_ACTIVE"; // fallback if not set
+}
 
 // Helper to get local IP address
 function getLocalIpAddress() {
@@ -55,18 +86,66 @@ let activeTunnelUrl = null;
 // Endpoint to get connection details for QR Code
 app.get('/api/info', (req, res) => {
   const localIp = getLocalIpAddress();
+  const domain = getCloudflareDomain();
+  
+  // If user provided a domain in settings, use it directly. Otherwise use the process state.
+  const currentTunnelUrl = (domain && domain !== "CLOUDFLARE_ACTIVE") ? domain : activeTunnelUrl;
+
   res.json({
     localIp,
     wsPort: port,
     clientPort: 3000,
-    wsUrl: activeTunnelUrl 
-      ? activeTunnelUrl.replace('https://', 'wss://') 
+    wsUrl: currentTunnelUrl 
+      ? currentTunnelUrl.replace('https://', 'wss://') 
       : `ws://${localIp}:${port}`,
-    httpUrl: activeTunnelUrl 
-      ? activeTunnelUrl 
+    httpUrl: currentTunnelUrl 
+      ? currentTunnelUrl 
       : `http://${localIp}:3000`,
-    activeTunnelUrl: activeTunnelUrl
+    activeTunnelUrl: currentTunnelUrl
   });
+});
+
+app.get('/api/settings/cloudflare', (req, res) => {
+  try {
+    let config = {};
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    }
+    res.json({ 
+      token: config.cloudflareToken || '44d4807b-48e8-4a62-b504-28bcc139ac23',
+      domain: config.cloudflareDomain || ''
+    });
+  } catch (e) {
+    res.json({ token: '', domain: '' });
+  }
+});
+
+app.post('/api/settings/cloudflare', (req, res) => {
+  const { token, domain } = req.body;
+  if (!token) return res.status(400).json({ error: 'Token/ID is required' });
+  
+  try {
+    let config = {};
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    }
+    config.cloudflareToken = token;
+    config.cloudflareDomain = domain || '';
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    
+    console.log('[*] Cloudflare config updated. Restarting tunnel...');
+    manualRestart = true;
+    if (tunnelProcess) {
+      tunnelProcess.kill();
+    } else {
+      startTunnel();
+    }
+    
+    res.json({ success: true, token });
+  } catch (err) {
+    console.error('[!] Failed to save config:', err);
+    res.status(500).json({ error: 'Failed to save config' });
+  }
 });
 
 // Handle wildcard routing for client
@@ -135,12 +214,26 @@ wss.on('connection', (ws) => {
         case 'join':
           currentRoomId = roomId;
           clientType = data.clientType; // 'receiver' or 'sender'
+          const pin = data.pin;
           
           if (!rooms.has(roomId)) {
-            rooms.set(roomId, { receiver: null, sender: null });
+            rooms.set(roomId, { receiver: null, sender: null, pin: null });
           }
           
           const room = rooms.get(roomId);
+
+          // If receiver joins, set the pin for the room
+          if (clientType === 'receiver') {
+            room.pin = pin;
+          } else if (clientType === 'sender') {
+            // Check pin if receiver has already set it
+            if (room.pin && room.pin !== pin) {
+              ws.send(JSON.stringify({ type: 'error', message: 'PIN salah atau tidak valid.' }));
+              console.log(`[Room ${roomId}] Sender rejected due to invalid PIN.`);
+              return;
+            }
+          }
+
           room[clientType] = ws;
 
           console.log(`[Room ${roomId}] ${clientType} connected.`);
@@ -204,41 +297,51 @@ wss.on('connection', (ws) => {
 
 let tunnelProcess = null;
 let browserOpened = false;
+let manualRestart = false;
 
 function startTunnel() {
-  console.log('[*] Memulai SSH Tunnel ke localhost.run...');
-  
+  manualRestart = false;
+  console.log('[*] Memulai localhost.run Tunnel...');
+
+  // Use SSH port forwarding to connect to localhost.run
+  // We use -o StrictHostKeyChecking=no to prevent prompt verification
+  const isWin = os.platform() === 'win32';
   tunnelProcess = spawn('ssh', [
     '-o', 'StrictHostKeyChecking=no',
-    '-R', '80:localhost:8080',
+    '-o', `UserKnownHostsFile=${isWin ? 'NUL' : '/dev/null'}`,
+    '-R', `80:localhost:${port}`,
     'nokey@localhost.run'
   ]);
 
   tunnelProcess.stdout.on('data', (data) => {
     const output = data.toString();
-    console.log(`[SSH Tunnel]: ${output.trim()}`);
-    
-    // Parse URL from stdout (look for https://...lhr.life or https://...localhost.run)
-    const match = output.match(/https:\/\/[a-zA-Z0-9.-]+\.(lhr\.life|localhost\.run)/i);
-    if (match) {
-      activeTunnelUrl = match[0];
-      console.log(`\n==================================================`);
-      console.log(`[*] TUNNEL AKTIF: ${activeTunnelUrl}`);
-      console.log(`[*] QR Code HP akan otomatis menggunakan link ini!`);
-      console.log(`==================================================\n`);
+    console.log(`[Tunnel]: ${output.trim()}`);
 
-      // Automatically open the PC browser to the local server (only if NOT running in Electron)
-      if (!browserOpened && process.env.IS_ELECTRON !== 'true') {
-        browserOpened = true;
-        console.log('[*] Membuka browser PC secara otomatis...');
-        const startUrl = `http://localhost:${port}`;
-        const platform = os.platform();
-        if (platform === 'win32') {
-          exec(`start ${startUrl}`);
-        } else if (platform === 'darwin') {
-          exec(`open ${startUrl}`);
-        } else {
-          exec(`xdg-open ${startUrl}`);
+    // Parse any tunnel URL from the output, excluding admin and social links
+    const urls = output.match(/https:\/\/[a-zA-Z0-9-.]+/g);
+    if (urls) {
+      const parsedUrl = urls.find(url => !url.includes('admin.localhost.run') && !url.includes('twitter.com'));
+      if (parsedUrl && activeTunnelUrl !== parsedUrl) {
+        activeTunnelUrl = parsedUrl;
+        console.log(`\n==================================================`);
+        console.log(`[*] TUNNEL (LOCALHOST.RUN) AKTIF!`);
+        console.log(`[*] Domain: ${activeTunnelUrl}`);
+        console.log(`[*] Silakan buka link tersebut dari HP Anda.`);
+        console.log(`==================================================\n`);
+
+        // Automatically open the PC browser to the local server
+        if (!browserOpened && process.env.IS_ELECTRON !== 'true') {
+          browserOpened = true;
+          console.log('[*] Membuka browser PC secara otomatis...');
+          const startUrl = `http://localhost:${port}`;
+          const platform = os.platform();
+          if (platform === 'win32') {
+            exec(`start ${startUrl}`);
+          } else if (platform === 'darwin') {
+            exec(`open ${startUrl}`);
+          } else {
+            exec(`xdg-open ${startUrl}`);
+          }
         }
       }
     }
@@ -246,15 +349,19 @@ function startTunnel() {
 
   tunnelProcess.stderr.on('data', (data) => {
     const output = data.toString();
-    if (output.includes('Warning') || output.includes('Error')) {
-      console.warn(`[SSH Tunnel Warning]: ${output.trim()}`);
-    }
+    console.log(`[Tunnel Log/Err]: ${output.trim()}`);
   });
 
   tunnelProcess.on('close', (code) => {
-    console.log(`[SSH Tunnel] Koneksi terputus (Code: ${code}). Mencoba menyambungkan kembali dalam 5 detik...`);
+    console.log(`[Tunnel] Koneksi terputus (Code: ${code}).`);
     activeTunnelUrl = null;
-    setTimeout(startTunnel, 5000);
+    tunnelProcess = null;
+    if (manualRestart) {
+      startTunnel();
+    } else {
+      console.log(`[Tunnel] Mencoba menyambungkan kembali dalam 5 detik...`);
+      setTimeout(startTunnel, 5000);
+    }
   });
 }
 

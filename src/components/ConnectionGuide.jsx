@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 
-export default function ConnectionGuide({ roomId, serverInfo }) {
+export default function ConnectionGuide({ roomId, serverInfo, pin }) {
   const [activeTab, setActiveTab] = useState('tunnel');
   const [qrUrl, setQrUrl] = useState('');
   const [copied, setCopied] = useState(false);
@@ -10,16 +10,18 @@ export default function ConnectionGuide({ roomId, serverInfo }) {
   const activeProtocol = window.location.protocol;
   const activeHost = window.location.host;
   const activePort = window.location.port || (activeProtocol === 'https:' ? '443' : '80');
+  
+  const roomPin = pin || '1234';
 
   // Define connection URLs
   const tunnelUrl = serverInfo && serverInfo.activeTunnelUrl
-    ? `${serverInfo.activeTunnelUrl}/?room=${roomId}&role=sender`
+    ? `${serverInfo.activeTunnelUrl}/?room=${roomId}&pin=${roomPin}&role=sender`
     : '';
 
   const localIp = serverInfo ? serverInfo.localIp : window.location.hostname;
-  const wifiIpUrl = `http://${localIp}:${activePort === '3000' ? '3000' : '8080'}/?room=${roomId}&role=sender`;
+  const wifiIpUrl = `http://${localIp}:${activePort === '3000' ? '3000' : '8080'}/?room=${roomId}&pin=${roomPin}&role=sender`;
 
-  const usbAndroidUrl = `http://localhost:${activePort === '3000' ? '3000' : '8080'}/?room=${roomId}&role=sender`;
+  const usbAndroidUrl = `http://localhost:${activePort === '3000' ? '3000' : '8080'}/?room=${roomId}&pin=${roomPin}&role=sender`;
 
   // For iPhone USB connection, they must use the HTTPS tunnel address over the USB Hotspot network interface 
   // because iOS Safari prohibits camera stream access over non-secure http://172.x.x.x addresses.
@@ -150,7 +152,7 @@ export default function ConnectionGuide({ roomId, serverInfo }) {
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
               <div style={{ fontSize: '1.5rem', animation: 'blink 1s infinite alternate', marginBottom: '0.5rem' }}>🌀</div>
-              Menghubungkan ke SSH Tunnel... (Mohon tunggu)
+              Menghubungkan ke localhost.run Tunnel... (Mohon tunggu)
             </div>
           )}
         </div>
@@ -272,7 +274,7 @@ export default function ConnectionGuide({ roomId, serverInfo }) {
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
               <div style={{ fontSize: '1.5rem', animation: 'blink 1s infinite alternate', marginBottom: '0.5rem' }}>🌀</div>
-              Menghubungkan ke SSH Tunnel... (Safari iOS mewajibkan link HTTPS untuk kamera)
+              Menghubungkan ke localhost.run Tunnel... (Safari iOS mewajibkan link HTTPS untuk kamera)
             </div>
           )}
         </div>

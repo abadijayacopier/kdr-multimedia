@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export default function SenderView({ roomId }) {
+export default function SenderView({ roomId, roomPin }) {
   const [status, setStatus] = useState('Menginisialisasi...');
   const [connected, setConnected] = useState(false);
   const [activeCamera, setActiveCamera] = useState('environment'); // 'user' | 'environment'
@@ -18,11 +18,53 @@ export default function SenderView({ roomId }) {
   const [currentFocusMode, setCurrentFocusMode] = useState('continuous');
   const [isPaused, setIsPaused] = useState(false);
 
+  // New features
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+  const [activeFps, setActiveFps] = useState(30);
+  const [isTallyActive, setIsTallyActive] = useState(false);
+
   const localVideoRef = useRef(null);
   const streamRef = useRef(null);
   const wsRef = useRef(null);
   const pcRef = useRef(null);
   const queuedCandidatesRef = useRef([]);
+  const wakeLockRef = useRef(null);
+
+  // Screen Wake Lock API
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
+          console.log('[WakeLock] Screen Wake Lock is active');
+          
+          wakeLockRef.current.addEventListener('release', () => {
+            console.log('[WakeLock] Screen Wake Lock was released');
+          });
+        }
+      } catch (err) {
+        console.warn(`[WakeLock] Failed: ${err.name}, ${err.message}`);
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        await requestWakeLock();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (wakeLockRef.current !== null) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // WebRTC config
   const rtcConfig = {
@@ -61,7 +103,7 @@ export default function SenderView({ roomId }) {
       ws.send(JSON.stringify({
         type: 'join',
         roomId,
-        data: { clientType: 'sender' }
+        data: { clientType: 'sender', pin: roomPin }
       }));
     };
 
@@ -73,9 +115,15 @@ export default function SenderView({ roomId }) {
     ws.onmessage = async (messageText) => {
       try {
         const message = JSON.parse(messageText.data);
-        const { type, data } = message;
+        const { type, data, message: errorMsg } = message;
 
         switch (type) {
+          case 'error':
+            setStatus(`Koneksi Ditolak: ${errorMsg}`);
+            setMediaErrorType('permission'); // Reusing permission error screen to show the error
+            if (wsRef.current) wsRef.current.close();
+            break;
+
           case 'receiver-online':
             setStatus('PC Penerima Terdeteksi. Menyiapkan kamera...');
             // Start local stream if not already started
@@ -87,6 +135,8 @@ export default function SenderView({ roomId }) {
                 const capabilities = track.getCapabilities ? track.getCapabilities() : {};
                 sendCapabilities(capabilities);
               }
+              // Send active settings to PC so it updates its controls to match
+              sendActiveSettings();
               // Force connection to initiate immediately if camera is already running
               await initiateWebRTCConnection();
             }
@@ -163,11 +213,12 @@ export default function SenderView({ roomId }) {
   };
 
   // Get constraints based on camera and resolution selection
-  const getCameraConstraints = (camera, resolution) => {
+  const getCameraConstraints = (camera, resolution, fps, audio) => {
     const constraints = {
-      audio: false, // Mirroring camera only (optional to enable audio)
+      audio: audio ? { echoCancellation: true, noiseSuppression: true } : false,
       video: {
-        facingMode: camera === 'user' ? 'user' : { ideal: 'environment' }
+        facingMode: camera === 'user' ? 'user' : { ideal: 'environment' },
+        frameRate: { ideal: fps, max: 60 }
       }
     };
 
@@ -199,6 +250,30 @@ export default function SenderView({ roomId }) {
             focusSupported: !!capabilities.focusMode,
             focusModes: capabilities.focusMode || [],
             torchSupported: !!capabilities.torch
+          }
+        }
+      }));
+    }
+  };
+
+  // Send current active settings to PC
+  const sendActiveSettings = () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'control',
+        roomId,
+        data: {
+          action: 'active-settings',
+          value: {
+            camera: activeCamera,
+            resolution: activeResolution,
+            fps: activeFps,
+            audio: isAudioEnabled,
+            tally: isTallyActive,
+            flash: torchOn,
+            zoom: zoomValue,
+            focusMode: currentFocusMode,
+            isPaused: isPaused
           }
         }
       }));
@@ -239,7 +314,7 @@ export default function SenderView({ roomId }) {
   };
 
   // Pause / Play control
-  const applyPause = (shouldPause) => {
+  const applyPause = async (shouldPause) => {
     setIsPaused(shouldPause);
     if (streamRef.current) {
       streamRef.current.getVideoTracks().forEach(track => {
@@ -260,21 +335,46 @@ export default function SenderView({ roomId }) {
         data: { action: 'toggle-pause', value: shouldPause }
       }));
     }
+
+    // Always renegotiate WebRTC when resuming to recover from potential network drops or TURN server timeouts
+    if (!shouldPause && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      await initiateWebRTCConnection();
+    }
   };
 
   // Setup Mobile Camera
-  const setupCamera = async (camera, resolution) => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  const setupCamera = async (camera, resolution, fps = activeFps, audio = isAudioEnabled) => {
+    if (!navigator.mediaDevices) {
       setMediaErrorType('insecure');
-      setStatus('Gagal: Browser memblokir akses kamera (SSL/HTTPS diperlukan).');
+      setStatus('Gagal: Browser memblokir akses media (SSL/HTTPS diperlukan).');
       return;
     }
     try {
-      setStatus('Membuka kamera...');
+      setStatus(camera === 'screen' ? 'Memulai berbagi layar...' : 'Membuka kamera...');
       stopAllMedia();
 
-      const constraints = getCameraConstraints(camera, resolution);
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream;
+      if (camera === 'screen') {
+        if (!navigator.mediaDevices.getDisplayMedia) {
+          throw new Error('Screen sharing tidak didukung di browser ini.');
+        }
+        stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: audio });
+        // Handle if user stops screen sharing via browser UI
+        stream.getVideoTracks()[0].onended = () => {
+          setupCamera('environment', activeResolution, activeFps, isAudioEnabled);
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+              type: 'control',
+              roomId,
+              data: { action: 'camera-switched-local', value: 'environment' }
+            }));
+          }
+        };
+      } else {
+        if (!navigator.mediaDevices.getUserMedia) throw new Error('getUserMedia not supported');
+        const constraints = getCameraConstraints(camera, resolution, fps, audio);
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      }
       streamRef.current = stream;
 
       if (localVideoRef.current) {
@@ -323,10 +423,15 @@ export default function SenderView({ roomId }) {
 
       setActiveCamera(camera);
       setActiveResolution(resolution);
+      setActiveFps(fps);
+      setIsAudioEnabled(audio);
       setStatus('Kamera siap. Memulai streaming...');
 
       // Reset pause state on new camera initialization
       setIsPaused(false);
+
+      // Report active settings to receiver
+      sendActiveSettings();
 
       // If WebSocket is connected and we are in a session, start WebRTC renegotiation
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -356,7 +461,11 @@ export default function SenderView({ roomId }) {
 
       // Add local stream tracks to WebRTC
       streamRef.current.getTracks().forEach(track => {
-        pc.addTrack(track, streamRef.current);
+        if (track.kind === 'video') {
+          track.contentHint = 'motion';
+        }
+        const sender = pc.addTrack(track, streamRef.current);
+
       });
 
       pc.onicecandidate = (event) => {
@@ -400,14 +509,30 @@ export default function SenderView({ roomId }) {
     switch (action) {
       case 'switch-camera':
         if (value !== activeCamera) {
-          await setupCamera(value, activeResolution);
+          await setupCamera(value, activeResolution, activeFps, isAudioEnabled);
         }
         break;
 
       case 'set-resolution':
         if (value !== activeResolution) {
-          await setupCamera(activeCamera, value);
+          await setupCamera(activeCamera, value, activeFps, isAudioEnabled);
         }
+        break;
+
+      case 'set-fps':
+        if (value !== activeFps) {
+          await setupCamera(activeCamera, activeResolution, value, isAudioEnabled);
+        }
+        break;
+
+      case 'toggle-audio':
+        if (value !== isAudioEnabled) {
+          await setupCamera(activeCamera, activeResolution, activeFps, value);
+        }
+        break;
+
+      case 'tally-light':
+        setIsTallyActive(value);
         break;
 
       case 'toggle-flash':
@@ -430,7 +555,12 @@ export default function SenderView({ roomId }) {
         // Apply multiple settings at once
         const targetCam = value.camera || activeCamera;
         const targetRes = value.resolution || activeResolution;
-        await setupCamera(targetCam, targetRes);
+        const targetFps = value.fps || activeFps;
+        const targetAudio = value.audio !== undefined ? value.audio : isAudioEnabled;
+        
+        if (targetCam !== activeCamera || targetRes !== activeResolution || targetFps !== activeFps || targetAudio !== isAudioEnabled || !streamRef.current) {
+          await setupCamera(targetCam, targetRes, targetFps, targetAudio);
+        }
         setFlashlight(value.flash);
         if (value.zoom !== undefined) await applyZoom(value.zoom);
         if (value.focusMode !== undefined) await applyFocusMode(value.focusMode);
@@ -536,7 +666,12 @@ export default function SenderView({ roomId }) {
   }
 
   return (
-    <div className="mobile-view">
+    <div className="mobile-view" style={isTallyActive ? { border: '6px solid red', boxSizing: 'border-box' } : {}}>
+      {isTallyActive && (
+        <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'red', color: 'white', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', zIndex: 999, animation: 'blink 1s infinite alternate', boxShadow: '0 0 10px rgba(255,0,0,0.8)' }}>
+          🔴 LIVE
+        </div>
+      )}
       {/* Camera Live Preview on phone screen */}
       <video
         ref={localVideoRef}
@@ -548,24 +683,28 @@ export default function SenderView({ roomId }) {
 
       {/* Blurred Pause Overlay */}
       {isPaused && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: 'rgba(8, 9, 12, 0.85)',
-          backdropFilter: 'blur(10px)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 5,
-          color: '#fff'
-        }}>
-          <span style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'blink 1.2s infinite alternate' }}>⏸️</span>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--accent-red)', margin: 0 }}>SIARAN DITANGGUHKAN</h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Ketuk tombol putar di bawah untuk melanjutkan</p>
+        <div 
+          onClick={() => applyPause(false)}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(8, 9, 12, 0.85)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 5,
+            color: '#fff',
+            cursor: 'pointer'
+          }}
+        >
+          <span style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'blink 1.2s infinite alternate' }}>▶️</span>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 600, color: 'var(--accent-cyan)', margin: 0 }}>SIARAN DI-PAUSE</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Ketuk layar HP Anda untuk melanjutkan siaran</p>
         </div>
       )}
 
@@ -598,19 +737,57 @@ export default function SenderView({ roomId }) {
         <div className="mobile-footer">
           {/* Active stats */}
           <div style={{ display: 'flex', gap: '1rem', background: 'rgba(0, 0, 0, 0.6)', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div>CAM: {activeCamera === 'environment' ? 'BELAKANG' : 'DEPAN'}</div>
+            <div>CAM: {activeCamera === 'screen' ? 'LAYAR' : (activeCamera === 'environment' ? 'BELAKANG' : 'DEPAN')}</div>
             <div>RES: {activeResolution}</div>
           </div>
 
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-            {/* Flashlight toggle */}
-            {torchSupported && (
+            <button
+              onClick={() => {
+                const nextAudio = !isAudioEnabled;
+                setupCamera(activeCamera, activeResolution, activeFps, nextAudio);
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                  wsRef.current.send(JSON.stringify({
+                    type: 'control',
+                    roomId,
+                    data: { action: 'audio-switched-local', value: nextAudio }
+                  }));
+                }
+              }}
+              className={`mobile-btn-circle ${isAudioEnabled ? 'active' : ''}`}
+              title="Toggle Microphone"
+              style={{ backgroundColor: isAudioEnabled ? 'var(--accent-green)' : 'rgba(255, 255, 255, 0.15)' }}
+            >
+              <span style={{ fontSize: '1.4rem' }}>{isAudioEnabled ? '🎙️' : '🔇'}</span>
+            </button>
+
+            {/* Screen Share / Torch toggle */}
+            {activeCamera !== 'screen' && torchSupported ? (
               <button
                 onClick={() => setFlashlight(!torchOn)}
                 className={`mobile-btn-circle ${torchOn ? 'active' : ''}`}
                 title="Toggle Flashlight"
               >
                 <span style={{ fontSize: '1.4rem' }}>🔦</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  const nextCam = activeCamera === 'screen' ? 'environment' : 'screen';
+                  setupCamera(nextCam, activeResolution);
+                  if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                    wsRef.current.send(JSON.stringify({
+                      type: 'control',
+                      roomId,
+                      data: { action: 'camera-switched-local', value: nextCam }
+                    }));
+                  }
+                }}
+                className={`mobile-btn-circle ${activeCamera === 'screen' ? 'active' : ''}`}
+                title="Screen Share"
+                style={{ backgroundColor: activeCamera === 'screen' ? 'var(--accent-blue)' : 'rgba(255, 255, 255, 0.15)' }}
+              >
+                <span style={{ fontSize: '1.4rem' }}>📱</span>
               </button>
             )}
 
