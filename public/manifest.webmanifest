@@ -1,0 +1,11 @@
+{
+  "name": "KDR Camera",
+  "short_name": "KDR Camera",
+  "description": "Wireless camera client for KDR Multimedia",
+  "start_url": "/?role=sender",
+  "display": "standalone",
+  "background_color": "#08090c",
+  "theme_color": "#08090c",
+  "orientation": "landscape",
+  "icons": []
+}
