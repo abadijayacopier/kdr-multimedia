@@ -1,0 +1,149 @@
+name: Build KDR Camera OBS Plugin
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "obs-plugin/**"
+      - ".github/workflows/obs-plugin.yml"
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout KDR Multimedia
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Prepare OBS plugin build environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $template = Join-Path $env:RUNNER_TEMP "obs-plugintemplate"
+          $buildRoot = Join-Path $env:RUNNER_TEMP "kdr-camera-obs-build"
+
+          git clone --depth 1 https://github.com/obsproject/obs-plugintemplate.git $template
+          Copy-Item $template $buildRoot -Recurse -Force
+
+          Copy-Item "$env:GITHUB_WORKSPACE\obs-plugin\src" "$buildRoot\src" -Recurse -Force
+          Copy-Item "$env:GITHUB_WORKSPACE\obs-plugin\data" "$buildRoot\data" -Recurse -Force
+
+          @'
+          {
+            "dependencies": {
+              "obs-studio": {
+                "version": "31.1.1",
+                "baseUrl": "https://github.com/obsproject/obs-studio/archive/refs/tags",
+                "label": "OBS sources",
+                "hashes": {
+                  "windows-x64": "2c8427c10b55ac6d68008df2e9a3e82f4647aaad18f105e30d4713c2de678ccf"
+                }
+              },
+              "prebuilt": {
+                "version": "2025-07-11",
+                "baseUrl": "https://github.com/obsproject/obs-deps/releases/download",
+                "label": "Pre-Built obs-deps",
+                "hashes": {
+                  "windows-x64": "c8c642c1070dc31ce9a0f1e4cef5bb992f4bff4882255788b5da12129e85caa7"
+                }
+              },
+              "qt6": {
+                "version": "2025-07-11",
+                "baseUrl": "https://github.com/obsproject/obs-deps/releases/download",
+                "label": "Pre-Built Qt6",
+                "hashes": {
+                  "windows-x64": "0e76bf0555dd5382838850b748d3dcfab44a1e1058441309ab54e1a65b156d0a"
+                }
+              }
+            },
+            "platformConfig": {
+              "macos": {
+                "bundleId": "com.kdrmultimedia.kdrcamera"
+              }
+            },
+            "name": "kdr-camera",
+            "displayName": "KDR Camera",
+            "version": "1.0.0",
+            "author": "KDR Multimedia",
+            "website": "https://github.com/abadijayacopier/kdr-multimedia",
+            "email": "support@kdrmultimedia.local"
+          }
+          '@ | Set-Content "$buildRoot\buildspec.json" -Encoding UTF8
+
+          @'
+          cmake_minimum_required(VERSION 3.28...3.30)
+
+          include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCOPE)
+
+          project(${_name} VERSION ${_version})
+
+          include(compilerconfig)
+          include(defaults)
+          include(helpers)
+
+          add_library(${CMAKE_PROJECT_NAME} MODULE)
+
+          find_package(libobs REQUIRED)
+          target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
+
+          target_compile_features(${CMAKE_PROJECT_NAME} PRIVATE cxx_std_17)
+          target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+            src/plugin-main.cpp
+            src/kdr-camera-source.cpp
+          )
+
+          set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
+
+          install(TARGETS ${CMAKE_PROJECT_NAME}
+            RUNTIME DESTINATION obs-plugins/64bit
+            LIBRARY DESTINATION obs-plugins/64bit
+          )
+
+          install(DIRECTORY data/
+            DESTINATION data/obs-plugins/kdr-camera
+          )
+          '@ | Set-Content "$buildRoot\CMakeLists.txt" -Encoding UTF8
+
+          Write-Host "Build root: $buildRoot"
+
+      - name: Build plugin
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $buildRoot = Join-Path $env:RUNNER_TEMP "kdr-camera-obs-build"
+          Push-Location $buildRoot
+          try {
+            .\.github\scripts\Build-Windows.ps1 -Target x64 -Configuration RelWithDebInfo
+          } finally {
+            Pop-Location
+          }
+
+      - name: Package plugin
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $buildRoot = Join-Path $env:RUNNER_TEMP "kdr-camera-obs-build"
+          $release = Join-Path $buildRoot "release\RelWithDebInfo"
+          $package = Join-Path $env:RUNNER_TEMP "KDR-Camera-OBS-Windows-x64"
+
+          if (Test-Path $package) {
+            Remove-Item $package -Recurse -Force
+          }
+
+          New-Item -ItemType Directory -Path $package -Force | Out-Null
+          Copy-Item "$release\*" $package -Recurse -Force
+
+          $zip = Join-Path $env:GITHUB_WORKSPACE "KDR-Camera-OBS-Windows-x64.zip"
+          Compress-Archive -Path "$package\*" -DestinationPath $zip -Force
+
+          Write-Host "Created $zip"
+
+      - name: Upload OBS plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: kdr-camera-obs-windows-x64
+          path: KDR-Camera-OBS-Windows-x64.zip
+          if-no-files-found: error
