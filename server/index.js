@@ -69,16 +69,35 @@ function getCloudflareDomain() {
 // Helper to get local IP address
 function getLocalIpAddress() {
   const interfaces = os.networkInterfaces();
+  const candidates = [];
+
   for (const devName in interfaces) {
-    const iface = interfaces[devName];
-    for (let i = 0; i < iface.length; i++) {
-      const alias = iface[i];
-      if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
-        return alias.address;
-      }
+    const iface = interfaces[devName] || [];
+    for (const alias of iface) {
+      if (alias.family !== 'IPv4' || alias.internal || alias.address === '127.0.0.1') continue;
+
+      const ip = alias.address;
+      const privateLan =
+        /^10\./.test(ip) ||
+        /^192\.168\./.test(ip) ||
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip);
+
+      candidates.push({
+        ip,
+        privateLan,
+        interfaceName: devName.toLowerCase()
+      });
     }
   }
-  return 'localhost';
+
+  // Prefer normal private LAN addresses so VPN/virtual adapters do not
+  // accidentally become the QR pairing address.
+  const preferred = candidates.find(item =>
+    item.privateLan &&
+    !/(vpn|virtual|vmware|vbox|hyper-v|docker|wsl|tailscale|zerotier)/i.test(item.interfaceName)
+  );
+
+  return (preferred || candidates.find(item => item.privateLan) || candidates[0])?.ip || 'localhost';
 }
 
 let activeTunnelUrl = null;
@@ -91,6 +110,10 @@ app.get('/api/info', (req, res) => {
   // If user provided a domain in settings, use it directly. Otherwise use the process state.
   const currentTunnelUrl = (domain && domain !== "CLOUDFLARE_ACTIVE") ? domain : activeTunnelUrl;
 
+  // KDR LAN-first: the HTTP app and WebSocket signaling share port 8080
+  // in production. During Vite development, /api/info is still served by
+  // this server and the LAN URL intentionally stays on the signaling port;
+  // the catch-all route redirects the browser to the Vite client when needed.
   const lanHttpUrl = `http://${localIp}:${port}`;
   const lanWsUrl = `ws://${localIp}:${port}`;
   const remoteWsUrl = currentTunnelUrl
@@ -102,12 +125,15 @@ app.get('/api/info', (req, res) => {
     wsPort: port,
     clientPort: 3000,
     mode: currentTunnelUrl ? 'remote-fallback' : 'lan',
+    network: 'LAN_FIRST',
     lanUrl: lanHttpUrl,
+    lanHttpUrl,
     lanWsUrl,
     wsUrl: remoteWsUrl || lanWsUrl,
     httpUrl: currentTunnelUrl || lanHttpUrl,
     activeTunnelUrl: currentTunnelUrl,
     pairing: {
+      strategy: 'LAN_FIRST_REMOTE_FALLBACK',
       lan: `kdr://pair?server=${encodeURIComponent(lanHttpUrl)}`,
       remote: currentTunnelUrl ? `kdr://pair?server=${encodeURIComponent(currentTunnelUrl)}` : null
     }
