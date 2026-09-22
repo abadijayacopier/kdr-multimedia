@@ -21,11 +21,16 @@ export default function ConnectionGuide({ roomId, serverInfo, pin }) {
   const localIp = serverInfo ? serverInfo.localIp : window.location.hostname;
   const wifiIpUrl = `http://${localIp}:${activePort === '3000' ? '3000' : '8080'}/?room=${roomId}&pin=${roomPin}&role=sender`;
 
-  const usbAndroidUrl = `http://localhost:${activePort === '3000' ? '3000' : '8080'}/?room=${roomId}&pin=${roomPin}&role=sender`;
+  const usbAndroidBaseUrl = serverInfo?.usbNetworks?.[0]?.url || '';
+  const usbAndroidUrl = usbAndroidBaseUrl
+    ? `${usbAndroidBaseUrl}/?room=${roomId}&pin=${roomPin}&role=sender`
+    : '';
 
   // For iPhone USB connection, they must use the HTTPS tunnel address over the USB Hotspot network interface 
   // because iOS Safari prohibits camera stream access over non-secure http://172.x.x.x addresses.
-  const usbIphoneUrl = tunnelUrl || wifiIpUrl;
+  const usbIphoneUrl = serverInfo?.usbNetworks?.[0]?.url
+    ? `${serverInfo.usbNetworks[0].url}/?room=${roomId}&pin=${roomPin}&role=sender`
+    : tunnelUrl || wifiIpUrl;
 
   // OBS URLs (Always offline local connections for 0ms latency)
   const localObsUrl = `http://localhost:${activePort === '3000' ? '3000' : '8080'}/?room=${roomId}&view=obs`;
@@ -196,30 +201,24 @@ export default function ConnectionGuide({ roomId, serverInfo, pin }) {
       {activeTab === 'usb-android' && (
         <div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.2rem', lineHeight: '1.4' }}>
-            Koneksi via kabel data USB Android. Latensi mendekati <b>0ms (Tanpa Delay)</b>. Kamera otomatis dianggap aman oleh Chrome tanpa perlu setelan SSL/HTTPS!
+            Koneksi kabel USB Android menggunakan <b>USB Tethering / USB Network</b>. Ini berbeda dari USB Debugging dan tidak memerlukan ADB untuk jalur jaringan.
           </p>
 
           <ol style={{ paddingLeft: '1.2rem', margin: '0 0 1.2rem 0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-            <li>Aktifkan <b>Opsi Pengembang (Developer Options)</b> dan nyalakan <b>USB Debugging</b> di HP Android Anda.</li>
-            <li>Hubungkan HP ke PC menggunakan kabel data USB berkualitas baik.</li>
-            <li>Jalankan perintah adb berikut di PowerShell / Command Prompt PC Anda untuk mem-forward port:</li>
+            <li>Hubungkan HP ke PC menggunakan kabel data USB.</li>
+            <li>Aktifkan <b>USB Tethering</b> pada pengaturan Hotspot/Tethering Android.</li>
+            <li>Tunggu sampai PC mendapatkan interface jaringan USB/RNDIS.</li>
+            <li>Scan QR Code di bawah setelah alamat USB terdeteksi oleh server.</li>
           </ol>
 
-          <div style={{ background: 'rgba(0,0,0,0.5)', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.2rem' }}>
-            <code style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--accent-cyan)', flex: 1, whiteSpace: 'nowrap', overflowX: 'auto', paddingBottom: '3px' }}>
-              {adbCommand}
-            </code>
-            <button 
-              onClick={() => copyToClipboard(adbCommand)}
-              className="btn btn-secondary" 
-              style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
-            >
-              {copied ? 'Tersalin' : 'Salin'}
-            </button>
-          </div>
+          {!usbAndroidUrl && (
+            <div style={{ background: 'rgba(255, 51, 102, 0.06)', padding: '0.8rem', borderRadius: '8px', border: '1px solid rgba(255,51,102,0.25)', marginBottom: '1.2rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+              USB Network belum terdeteksi. Aktifkan USB Tethering lalu tunggu beberapa detik.
+            </div>
+          )}
 
-          <ol start="4" style={{ paddingLeft: '1.2rem', margin: '0 0 1rem 0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-            <li>Buka browser Google Chrome di HP Anda, scan QR Code di bawah atau buka alamat:</li>
+          <ol style={{ paddingLeft: '1.2rem', margin: '0 0 1rem 0', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+            <li>Buka KDR Camera di HP, lalu scan QR Code di bawah.</li>
           </ol>
 
           <div className="qr-container">
