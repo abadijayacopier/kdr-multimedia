@@ -4,9 +4,11 @@ OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE("kdr-camera", "en-US")
 
 extern struct obs_source_info kdr_camera_source_info;
+extern void kdr_camera_source_init();
 
 bool obs_module_load(void)
 {
+    kdr_camera_source_init();
     obs_register_source(&kdr_camera_source_info);
     blog(LOG_INFO, "[KDR Camera] OBS source plugin loaded");
     return true;
