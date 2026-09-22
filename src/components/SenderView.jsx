@@ -86,31 +86,60 @@ export default function SenderView({ roomId, roomPin }) {
   };
 
   useEffect(() => {
-    // 1. Connect to WebSocket signaling server
-    const wsHost = window.location.port === '3000'
+    // KDR Camera connection: prefer explicit server from pairing QR,
+    // then local LAN, and only use the current host as a final fallback.
+    const params = new URLSearchParams(window.location.search);
+    const savedServer = localStorage.getItem('kdr_camera_server_url');
+    const serverUrl = params.get('server') || savedServer || null;
+
+    if (serverUrl) {
+      localStorage.setItem('kdr_camera_server_url', serverUrl);
+    }
+
+    const normalizeWs = (value) => {
+      if (!value) return null;
+      if (value.startsWith('ws://') || value.startsWith('wss://')) return value;
+      if (value.startsWith('https://')) return value.replace(/^https:\/\//, 'wss://');
+      if (value.startsWith('http://')) return value.replace(/^http:\/\//, 'ws://');
+      return `ws://${value}`;
+    };
+
+    const fallbackHost = window.location.port === '3000'
       ? `${window.location.hostname}:8080`
       : window.location.host;
-    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProto}//${wsHost}`;
+    const wsUrl = normalizeWs(serverUrl) || `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${fallbackHost}`;
 
-    setStatus('Menghubungkan ke server...');
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
+    let reconnectTimer = null;
+    let reconnectAttempt = 0;
+    let disposed = false;
 
-    ws.onopen = () => {
-      setConnected(true);
-      setStatus('Terhubung ke Server. Menunggu PC...');
-      ws.send(JSON.stringify({
-        type: 'join',
-        roomId,
-        data: { clientType: 'sender', pin: roomPin }
-      }));
-    };
+    const connect = () => {
+      if (disposed) return;
+      setStatus(reconnectAttempt > 0 ? `Menyambungkan kembali (${reconnectAttempt})...` : 'Menghubungkan ke server...');
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
 
-    ws.onclose = () => {
-      setConnected(false);
-      setStatus('Koneksi server terputus.');
-    };
+      ws.onopen = () => {
+        reconnectAttempt = 0;
+        setConnected(true);
+        setStatus('Terhubung ke Server. Menunggu PC...');
+        ws.send(JSON.stringify({
+          type: 'join',
+          roomId,
+          data: { clientType: 'sender', pin: roomPin }
+        }));
+      };
+
+      ws.onclose = () => {
+        setConnected(false);
+        if (disposed) return;
+        setStatus('Koneksi terputus. Mencoba kembali...');
+        reconnectAttempt = Math.min(reconnectAttempt + 1, 10);
+        const delay = Math.min(1000 * Math.pow(1.5, reconnectAttempt - 1), 8000);
+        reconnectTimer = setTimeout(connect, delay);
+      };
+
+      ws.onmessage = async (messageText) => {
 
     ws.onmessage = async (messageText) => {
       try {
@@ -196,10 +225,13 @@ export default function SenderView({ roomId, roomPin }) {
 
     // Initialize local camera immediately to show preview
     setupCamera(activeCamera, activeResolution);
+    connect();
 
     return () => {
+      disposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
       stopAllMedia();
-      ws.close();
+      if (wsRef.current) wsRef.current.close();
       if (pcRef.current) pcRef.current.close();
     };
   }, [roomId]);
