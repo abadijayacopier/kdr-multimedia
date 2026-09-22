@@ -221,6 +221,8 @@ export default function SenderView({ roomId, roomPin }) {
       }
     };
 
+    };
+
     // Initialize local camera immediately to show preview
     setupCamera(activeCamera, activeResolution);
     connect();
