@@ -28,6 +28,9 @@ jobs:
           git clone --depth 1 https://github.com/obsproject/obs-plugintemplate.git $template
           Copy-Item $template $buildRoot -Recurse -Force
 
+          if (Test-Path "$buildRoot\src") { Remove-Item "$buildRoot\src" -Recurse -Force }
+          if (Test-Path "$buildRoot\data") { Remove-Item "$buildRoot\data" -Recurse -Force }
+
           Copy-Item "$env:GITHUB_WORKSPACE\obs-plugin\src" "$buildRoot\src" -Recurse -Force
           Copy-Item "$env:GITHUB_WORKSPACE\obs-plugin\data" "$buildRoot\data" -Recurse -Force
 
