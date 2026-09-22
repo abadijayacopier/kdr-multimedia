@@ -223,18 +223,21 @@ static obs_properties_t *kdr_properties(void *)
     return props;
 }
 
-obs_source_info kdr_camera_source_info = {
-    .id = "kdr_camera",
-    .type = OBS_SOURCE_TYPE_INPUT,
-    .output_flags = OBS_SOURCE_VIDEO,
-    .get_name = kdr_get_name,
-    .create = kdr_create,
-    .destroy = kdr_destroy,
-    .update = kdr_update,
-    .get_defaults = kdr_defaults,
-    .get_properties = kdr_properties,
-    .video_render = kdr_video_render,
-    .get_width = kdr_width,
-    .get_height = kdr_height,
-    .icon_type = OBS_ICON_TYPE_CAMERA,
-};
+obs_source_info kdr_camera_source_info = {};
+
+void kdr_camera_source_init()
+{
+    kdr_camera_source_info.id = "kdr_camera";
+    kdr_camera_source_info.type = OBS_SOURCE_TYPE_INPUT;
+    kdr_camera_source_info.output_flags = OBS_SOURCE_VIDEO;
+    kdr_camera_source_info.get_name = kdr_get_name;
+    kdr_camera_source_info.create = kdr_create;
+    kdr_camera_source_info.destroy = kdr_destroy;
+    kdr_camera_source_info.update = kdr_update;
+    kdr_camera_source_info.get_defaults = kdr_defaults;
+    kdr_camera_source_info.get_properties = kdr_properties;
+    kdr_camera_source_info.video_render = kdr_video_render;
+    kdr_camera_source_info.get_width = kdr_width;
+    kdr_camera_source_info.get_height = kdr_height;
+    kdr_camera_source_info.icon_type = OBS_ICON_TYPE_CAMERA;
+}
