@@ -1,10 +1,10 @@
 {
-  "name": "KDR Multimedia Camera",
+  "name": "KDR Camera — KDR Multimedia",
   "short_name": "KDR Camera",
   "description": "Mirroring Kamera HP ke PC / OBS Studio - KDR Multimedia",
   "start_url": "/?role=sender",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "landscape",
   "background_color": "#08090c",
   "theme_color": "#08090c",
   "icons": [
