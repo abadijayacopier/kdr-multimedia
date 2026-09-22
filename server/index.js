@@ -91,17 +91,26 @@ app.get('/api/info', (req, res) => {
   // If user provided a domain in settings, use it directly. Otherwise use the process state.
   const currentTunnelUrl = (domain && domain !== "CLOUDFLARE_ACTIVE") ? domain : activeTunnelUrl;
 
+  const lanHttpUrl = `http://${localIp}:${port}`;
+  const lanWsUrl = `ws://${localIp}:${port}`;
+  const remoteWsUrl = currentTunnelUrl
+    ? currentTunnelUrl.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+    : null;
+
   res.json({
     localIp,
     wsPort: port,
     clientPort: 3000,
-    wsUrl: currentTunnelUrl 
-      ? currentTunnelUrl.replace('https://', 'wss://') 
-      : `ws://${localIp}:${port}`,
-    httpUrl: currentTunnelUrl 
-      ? currentTunnelUrl 
-      : `http://${localIp}:3000`,
-    activeTunnelUrl: currentTunnelUrl
+    mode: currentTunnelUrl ? 'remote-fallback' : 'lan',
+    lanUrl: lanHttpUrl,
+    lanWsUrl,
+    wsUrl: remoteWsUrl || lanWsUrl,
+    httpUrl: currentTunnelUrl || lanHttpUrl,
+    activeTunnelUrl: currentTunnelUrl,
+    pairing: {
+      lan: `kdr://pair?server=${encodeURIComponent(lanHttpUrl)}`,
+      remote: currentTunnelUrl ? `kdr://pair?server=${encodeURIComponent(currentTunnelUrl)}` : null
+    }
   });
 });
 
