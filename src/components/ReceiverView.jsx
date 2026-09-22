@@ -161,31 +161,54 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
   };
 
   useEffect(() => {
-    // 1. Establish WebSocket Connection
-    const wsHost = window.location.port === '3000' 
-      ? `${window.location.hostname}:8080` 
+    // KDR Multimedia: prefer the server advertised by LAN/QR pairing.
+    const params = new URLSearchParams(window.location.search);
+    const savedServer = localStorage.getItem('kdr_camera_server_url');
+    const serverUrl = params.get('server') || savedServer || null;
+
+    if (serverUrl) localStorage.setItem('kdr_camera_server_url', serverUrl);
+
+    const normalizeWs = (value) => {
+      if (!value) return null;
+      if (value.startsWith('ws://') || value.startsWith('wss://')) return value;
+      if (value.startsWith('https://')) return value.replace(/^https:\/\//, 'wss://');
+      if (value.startsWith('http://')) return value.replace(/^http:\/\//, 'ws://');
+      return `ws://${value}`;
+    };
+
+    const fallbackHost = window.location.port === '3000'
+      ? `${window.location.hostname}:8080`
       : window.location.host;
-    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProto}//${wsHost}`;
+    const wsUrl = normalizeWs(serverUrl) || `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${fallbackHost}`;
 
-    console.log('Connecting to WebSocket at:', wsUrl);
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
+    let reconnectTimer = null;
+    let reconnectAttempt = 0;
+    let disposed = false;
 
-    ws.onopen = () => {
-      setWsStatus('open');
-      // Join Room as Receiver
-      ws.send(JSON.stringify({
-        type: 'join',
-        roomId,
-        data: { clientType: 'receiver', pin: roomPin }
-      }));
-    };
+    const connect = () => {
+      if (disposed) return;
+      setWsStatus('connecting');
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
 
-    ws.onclose = () => {
-      setWsStatus('closed');
-      setPhoneStatus('offline');
-    };
+      ws.onopen = () => {
+        reconnectAttempt = 0;
+        setWsStatus('open');
+        ws.send(JSON.stringify({
+          type: 'join',
+          roomId,
+          data: { clientType: 'receiver', pin: roomPin }
+        }));
+      };
+
+      ws.onclose = () => {
+        setWsStatus('closed');
+        setPhoneStatus('offline');
+        if (disposed) return;
+        reconnectAttempt = Math.min(reconnectAttempt + 1, 10);
+        const delay = Math.min(1000 * Math.pow(1.5, reconnectAttempt - 1), 8000);
+        reconnectTimer = setTimeout(connect, delay);
+      };
 
     ws.onmessage = async (messageText) => {
       try {
