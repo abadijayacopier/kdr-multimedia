@@ -1004,3 +1004,392 @@ export default function ReceiverView({ roomId, serverInfo, isObsView, layoutMode
           {/* Stream stats */}
           {phoneStatus === 'streaming' && (
             <div className="stats-bar">
+              <div className="stat-item">Resolusi: <span>{videoStats.resolution}</span></div>
+              <div className="stat-item">FPS: <span>{videoStats.fps}</span></div>
+              <div className="stat-item">Bitrate: <span>{videoStats.bitrate}</span></div>
+              <div className="stat-item" style={{ marginLeft: 'auto' }}>Mode: <span style={{ color: 'var(--accent-green)' }}>P2P (WebRTC)</span></div>
+            </div>
+          )}
+
+          {/* Hidden Canvas for Screenshots */}
+          <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+          {/* Connection Guide for Setup */}
+          {phoneStatus !== 'streaming' && (
+            <div style={{ position: 'relative' }}>
+              <ConnectionGuide roomId={roomId} serverInfo={serverInfo} pin={roomPin} />
+              <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.8)', padding: '6px 14px', borderRadius: '12px', fontSize: '0.9rem', color: 'var(--accent-cyan)', fontWeight: 'bold', fontFamily: 'monospace', border: '1px solid var(--accent-cyan)', boxShadow: '0 4px 15px rgba(0, 242, 254, 0.2)' }}>
+                PIN: {roomPin}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right side: Controller Panel */}
+        <div className="glass-panel sidebar-panel">
+          <h3 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>🛠️</span> Panel Kontrol
+          </h3>
+
+          {/* Room ID Info & Edit */}
+          {onChangeRoomId && (
+            <div className="control-group" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '0.8rem' }}>
+              <label>ID Room (Kode Hubung)</label>
+              {isEditingId ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <input 
+                    type="text" 
+                    value={tempId} 
+                    onChange={(e) => setTempId(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))}
+                    style={{ 
+                      background: 'rgba(0, 0, 0, 0.4)', 
+                      border: '1px solid var(--accent-cyan)', 
+                      borderRadius: '8px', 
+                      color: '#fff', 
+                      padding: '0.4rem 0.6rem', 
+                      fontSize: '0.9rem', 
+                      flex: 1,
+                      fontFamily: 'monospace',
+                      letterSpacing: '1px',
+                      outline: 'none'
+                    }} 
+                  />
+                  <button 
+                    onClick={() => {
+                      if (tempId.trim().length >= 3) {
+                        onChangeRoomId(tempId.trim());
+                        setIsEditingId(false);
+                      }
+                    }}
+                    className="btn btn-primary"
+                    style={{ padding: '0.4rem 0.6rem', minWidth: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Simpan"
+                  >
+                    ✔️
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                      let result = '';
+                      for (let i = 0; i < 6; i++) {
+                        result += chars.charAt(Math.floor(Math.random() * chars.length));
+                      }
+                      setTempId(result);
+                    }}
+                    className="btn btn-secondary"
+                    style={{ padding: '0.4rem 0.6rem', minWidth: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Acak Baru"
+                  >
+                    🔄
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setTempId(roomId);
+                      setIsEditingId(false);
+                    }}
+                    className="btn btn-secondary"
+                    style={{ padding: '0.4rem 0.6rem', minWidth: 'auto', color: 'var(--accent-red)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Batal"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '0.5rem 0.8rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--accent-cyan)', fontFamily: 'monospace', letterSpacing: '1px' }}>
+                    {roomId}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setTempId(roomId);
+                      setIsEditingId(true);
+                    }}
+                    className="btn btn-secondary"
+                    style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', minWidth: 'auto' }}
+                  >
+                    ✏️ Ubah ID
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Desktop Audio Monitor Toggle */}
+          {isAudioEnabled && !isObsView && (
+            <div style={{ padding: '0.5rem 1rem', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Monitoring Audio di PC:</span>
+              <button 
+                onClick={() => setIsMutedLocally(!isMutedLocally)}
+                className={`btn ${isMutedLocally ? 'btn-danger' : 'btn-primary'}`}
+                style={{ padding: '0.2rem 0.8rem', fontSize: '0.75rem' }}
+              >
+                {isMutedLocally ? '🔇 Muted' : '🔊 Unmuted'}
+              </button>
+            </div>
+          )}
+
+          {/* OBS Studio Integration Link */}
+          <div className="control-group" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', marginBottom: '0.8rem' }}>
+            <label>Integrasi OBS Studio</label>
+            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.3rem' }}>
+              <input 
+                type="text" 
+                readOnly
+                value={`${window.location.protocol}//${window.location.hostname}:${window.location.port || '8080'}/?room=${roomId}&view=obs`}
+                style={{ 
+                  background: 'rgba(0, 0, 0, 0.4)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '8px', 
+                  color: 'var(--text-secondary)', 
+                  padding: '0.4rem 0.6rem', 
+                  fontSize: '0.75rem', 
+                  flex: 1,
+                  fontFamily: 'monospace',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  outline: 'none'
+                }} 
+              />
+              <button 
+                onClick={copyObsUrl}
+                className="btn"
+                style={{ 
+                  padding: '0.4rem 0.6rem', 
+                  fontSize: '0.75rem', 
+                  minWidth: '70px',
+                  background: obsCopied ? 'rgba(46, 213, 115, 0.2)' : 'rgba(255,255,255,0.05)',
+                  borderColor: obsCopied ? 'var(--accent-green)' : 'var(--border-color)',
+                  color: obsCopied ? 'var(--accent-green)' : 'var(--text-primary)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {obsCopied ? 'Tersalin' : 'Salin'}
+              </button>
+            </div>
+            <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.65rem', color: 'var(--text-secondary)', lineHeight: '1.3' }}>
+              Tambahkan sebagai <b>Browser Source</b> di OBS (Resolusi: 1920x1080).
+            </p>
+          </div>
+
+          {/* Media Capture Actions */}
+          <div className="control-group">
+            <label>Pengambilan Media</label>
+            <button
+              onClick={captureSnapshot}
+              disabled={phoneStatus !== 'streaming'}
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              📸 Ambil Foto (Snapshot)
+            </button>
+            <button
+              onClick={toggleRecording}
+              disabled={phoneStatus !== 'streaming'}
+              className={`btn ${isRecording ? 'btn-danger' : 'btn-secondary'}`}
+              style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }}
+            >
+              {isRecording ? '⏹️ Hentikan Rekaman' : '🔴 Mulai Rekam Layar'}
+            </button>
+          </div>
+
+          {/* Remote camera settings */}
+          <div className="control-group" style={{ marginTop: '0.8rem' }}>
+            <label>Pilihan Kamera HP</label>
+            <select
+              value={selectedCamera}
+              onChange={handleCameraChange}
+              disabled={phoneStatus === 'offline'}
+              className="control-select"
+            >
+              <option value="environment">Kamera Belakang (Utama)</option>
+              <option value="user">Kamera Depan (Selfie)</option>
+              <option value="screen">Berbagi Layar (Screen Share)</option>
+            </select>
+          </div>
+
+          <div className="control-group">
+            <label>Resolusi & FPS</label>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <select
+                value={selectedResolution}
+                onChange={handleResolutionChange}
+                disabled={phoneStatus === 'offline'}
+                className="control-select"
+                style={{ flex: 2 }}
+              >
+                <option value="720p">720p (HD)</option>
+                <option value="1080p">1080p (Full HD)</option>
+                <option value="4k">4K (Ultra HD)</option>
+              </select>
+              <select
+                value={selectedFps}
+                onChange={(e) => {
+                  const fps = parseInt(e.target.value);
+                  setSelectedFps(fps);
+                  sendControlCommand('set-fps', fps);
+                }}
+                disabled={phoneStatus === 'offline'}
+                className="control-select"
+                style={{ flex: 1 }}
+              >
+                <option value={30}>30 FPS</option>
+                <option value={60}>60 FPS</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="control-group">
+            <label>Fitur Tambahan</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <button
+                onClick={() => {
+                  const nextAudio = !isAudioEnabled;
+                  setIsAudioEnabled(nextAudio);
+                  sendControlCommand('toggle-audio', nextAudio);
+                }}
+                disabled={phoneStatus === 'offline'}
+                className={`btn ${isAudioEnabled ? 'btn-primary' : 'btn-secondary'}`}
+                style={{
+                  background: isAudioEnabled ? 'rgba(46, 213, 115, 0.2)' : 'rgba(255,255,255,0.05)',
+                  borderColor: isAudioEnabled ? 'var(--accent-green)' : 'var(--border-color)',
+                  color: isAudioEnabled ? 'var(--accent-green)' : 'var(--text-primary)'
+                }}
+              >
+                {isAudioEnabled ? '🎙️ Mic ON' : '🔇 Mic OFF'}
+              </button>
+
+              <button
+                onClick={() => {
+                  const nextTally = !isTallyActive;
+                  setIsTallyActive(nextTally);
+                  sendControlCommand('tally-light', nextTally);
+                }}
+                disabled={phoneStatus === 'offline'}
+                className={`btn ${isTallyActive ? 'btn-danger' : 'btn-secondary'}`}
+                style={{
+                  background: isTallyActive ? 'rgba(255, 51, 102, 0.2)' : 'rgba(255,255,255,0.05)',
+                  borderColor: isTallyActive ? 'var(--accent-red)' : 'var(--border-color)',
+                  color: isTallyActive ? 'var(--accent-red)' : 'var(--text-primary)'
+                }}
+              >
+                🔴 Tally {isTallyActive ? 'ON' : 'OFF'}
+              </button>
+            </div>
+            
+            <button
+              onClick={handleFlashToggle}
+              disabled={phoneStatus === 'offline'}
+              className={`btn ${isFlashOn ? 'btn-primary' : 'btn-secondary'}`}
+              style={{
+                width: '100%',
+                marginTop: '0.5rem',
+                background: isFlashOn ? 'rgba(0, 242, 254, 0.2)' : 'rgba(255,255,255,0.05)',
+                borderColor: isFlashOn ? 'var(--accent-cyan)' : 'var(--border-color)',
+                color: isFlashOn ? 'var(--accent-cyan)' : 'var(--text-primary)'
+              }}
+            >
+              🔦 {isFlashOn ? 'Matikan Senter' : 'Nyalakan Senter'}
+            </button>
+          </div>
+
+          {/* Zoom Control */}
+          <div className="control-group">
+            <label style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>🔍 Zoom {phoneCapabilities.zoomSupported ? '(Hardware)' : '(Digital)'}</span>
+              <span style={{ color: 'var(--accent-cyan)' }}>{zoomVal.toFixed(1)}x</span>
+            </label>
+            <input
+              type="range"
+              min={phoneCapabilities.zoomSupported && phoneCapabilities.zoomRange ? phoneCapabilities.zoomRange.min : 1.0}
+              max={phoneCapabilities.zoomSupported && phoneCapabilities.zoomRange ? phoneCapabilities.zoomRange.max : 4.0}
+              step={phoneCapabilities.zoomSupported && phoneCapabilities.zoomRange ? phoneCapabilities.zoomRange.step : 0.1}
+              value={zoomVal}
+              onChange={handleZoomChange}
+              disabled={phoneStatus !== 'streaming'}
+              style={{
+                width: '100%',
+                accentColor: 'var(--accent-cyan)',
+                background: 'rgba(255,255,255,0.05)',
+                height: '6px',
+                borderRadius: '3px',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            />
+          </div>
+
+          {/* Autofocus Control */}
+          {phoneCapabilities.focusSupported && phoneCapabilities.focusModes.length > 0 && (
+            <div className="control-group">
+              <label>Autofokus (Hardware)</label>
+              <select
+                value={focusMode}
+                onChange={handleFocusModeChange}
+                disabled={phoneStatus !== 'streaming'}
+                className="control-select"
+              >
+                {phoneCapabilities.focusModes.map(mode => (
+                  <option key={mode} value={mode}>
+                    {mode === 'continuous' ? 'Otomatis Menerus (Continuous)' : mode === 'manual' ? 'Manual' : mode}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Pause / Play Control */}
+          <div className="control-group">
+            <label>Kontrol Siaran</label>
+            <button
+              onClick={handlePauseToggle}
+              disabled={phoneStatus !== 'streaming'}
+              className={`btn ${isPaused ? 'btn-danger' : 'btn-secondary'}`}
+              style={{
+                width: '100%',
+                background: isPaused ? 'rgba(255, 51, 102, 0.2)' : 'rgba(255,255,255,0.05)',
+                borderColor: isPaused ? 'var(--accent-red)' : 'var(--border-color)',
+                color: isPaused ? 'var(--accent-red)' : 'var(--text-primary)'
+              }}
+            >
+              {isPaused ? '▶️ Lanjutkan Siaran' : '⏸️ Pause Siaran'}
+            </button>
+          </div>
+
+          <div className="control-group" style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+            <button
+              onClick={toggleFullscreen}
+              disabled={phoneStatus !== 'streaming'}
+              className="btn btn-secondary"
+              style={{ width: '100%' }}
+            >
+              🖥️ Tampilkan Layar Penuh
+            </button>
+            
+            {phoneStatus === 'streaming' && (
+              <button
+                onClick={cleanupPeerConnection}
+                className="btn btn-danger"
+                style={{ width: '100%', marginTop: '0.5rem' }}
+              >
+                🔌 Putuskan Koneksi
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+      <footer style={{ 
+        marginTop: '2.5rem', 
+        paddingTop: '1.2rem', 
+        borderTop: '1px solid var(--border-color)', 
+        textAlign: 'center', 
+        fontSize: '0.85rem', 
+        color: 'var(--text-secondary)' 
+      }}>
+        <span>Developed by </span>
+        <strong style={{ color: 'var(--accent-cyan)', textShadow: '0 0 10px rgba(0, 242, 254, 0.3)' }}>supriyanto abadi jaya</strong>
+        <span> | KDR Multimedia © 2026</span>
+      </footer>
+    </div>
+  );
+}
