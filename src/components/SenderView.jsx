@@ -140,8 +140,6 @@ export default function SenderView({ roomId, roomPin }) {
       };
 
       ws.onmessage = async (messageText) => {
-
-    ws.onmessage = async (messageText) => {
       try {
         const message = JSON.parse(messageText.data);
         const { type, data, message: errorMsg } = message;
