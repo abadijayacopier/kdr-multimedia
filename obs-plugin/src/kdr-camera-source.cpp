@@ -87,6 +87,10 @@ static void update_browser(kdr_camera *data, obs_data_t *settings)
     data->height = (uint32_t)obs_data_get_int(settings, S_HEIGHT);
     data->fps = (int)obs_data_get_int(settings, S_FPS);
 
+    if (data->fps < 1) data->fps = 30;
+    if (data->width < 320) data->width = 1920;
+    if (data->height < 180) data->height = 1080;
+
     data->url = make_url(server, room, pin);
 
     // KDR Camera uses OBS Browser Source as the WebRTC rendering engine.
@@ -219,25 +223,18 @@ static obs_properties_t *kdr_properties(void *)
     return props;
 }
 
-struct obs_source_info kdr_camera_source_info = {};
-
-__attribute__((constructor))
-static void kdr_init_source_info()
-{
-    kdr_camera_source_info.id = "kdr_camera";
-    kdr_camera_source_info.type = OBS_SOURCE_TYPE_INPUT;
-    kdr_camera_source_info.output_flags =
-        OBS_SOURCE_VIDEO |
-        OBS_SOURCE_AUDIO |
-        OBS_SOURCE_CUSTOM_DRAW;
-    kdr_camera_source_info.get_name = kdr_get_name;
-    kdr_camera_source_info.create = kdr_create;
-    kdr_camera_source_info.destroy = kdr_destroy;
-    kdr_camera_source_info.update = kdr_update;
-    kdr_camera_source_info.get_defaults = kdr_defaults;
-    kdr_camera_source_info.get_properties = kdr_properties;
-    kdr_camera_source_info.video_render = kdr_video_render;
-    kdr_camera_source_info.get_width = kdr_width;
-    kdr_camera_source_info.get_height = kdr_height;
-    kdr_camera_source_info.icon_type = OBS_ICON_TYPE_CAMERA;
-}
+obs_source_info kdr_camera_source_info = {
+    .id = "kdr_camera",
+    .type = OBS_SOURCE_TYPE_INPUT,
+    .output_flags = OBS_SOURCE_VIDEO,
+    .get_name = kdr_get_name,
+    .create = kdr_create,
+    .destroy = kdr_destroy,
+    .update = kdr_update,
+    .get_defaults = kdr_defaults,
+    .get_properties = kdr_properties,
+    .video_render = kdr_video_render,
+    .get_width = kdr_width,
+    .get_height = kdr_height,
+    .icon_type = OBS_ICON_TYPE_CAMERA,
+};
