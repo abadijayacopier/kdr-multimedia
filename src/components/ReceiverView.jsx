@@ -15,14 +15,13 @@ function ConnectionGuideCompact({ roomId, serverInfo, pin }) {
   // Try to get roomPin from parent props or generate a fallback
   const roomPin = pin || '1234';
 
-  const mobileBaseUrl = serverInfo && serverInfo.activeTunnelUrl
-    ? serverInfo.activeTunnelUrl
-    : (isTunnel 
-        ? `${activeProtocol}//${activeHost}`
-        : (serverInfo ? `${activeProtocol}//${serverInfo.localIp}:${activePort}` : `${activeProtocol}//${window.location.hostname}:${activePort}`)
-      );
-    
-  const mobileUrl = `${mobileBaseUrl}/?room=${roomId}&pin=${roomPin}&role=sender`;
+  // LAN is the primary pairing path. Remote/tunnel is only used when explicitly requested.
+  const useRemote = new URLSearchParams(window.location.search).get('remote') === '1';
+  const lanBaseUrl = serverInfo?.lanUrl
+    || (serverInfo?.localIp ? `http://${serverInfo.localIp}:${serverInfo.wsPort || 8080}` : `${activeProtocol}//${activeHost}`);
+  const remoteBaseUrl = serverInfo?.activeTunnelUrl || (isTunnel ? `${activeProtocol}//${activeHost}` : '');
+  const mobileBaseUrl = useRemote && remoteBaseUrl ? remoteBaseUrl : lanBaseUrl;
+  const mobileUrl = `${mobileBaseUrl}/?room=${roomId}&pin=${roomPin}&role=sender&server=${encodeURIComponent(mobileBaseUrl)}`;
 
   useEffect(() => {
     QRCode.toDataURL(mobileUrl, {
