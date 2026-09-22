@@ -67,7 +67,7 @@ function getCloudflareDomain() {
 }
 
 // Helper to get local IP address
-function getLocalIpAddress() {
+function getNetworkCandidates() {
   const interfaces = os.networkInterfaces();
   const candidates = [];
 
@@ -82,22 +82,34 @@ function getLocalIpAddress() {
         /^192\.168\./.test(ip) ||
         /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip);
 
-      candidates.push({
-        ip,
-        privateLan,
-        interfaceName: devName.toLowerCase()
-      });
+      if (!privateLan) continue;
+
+      const interfaceName = devName.toLowerCase();
+      const usbLike = /(usb|rndis|remote ndis|android|iphone|apple mobile|ethernet gadget|ecm)/i.test(interfaceName);
+      const virtual = /(vpn|virtual|vmware|vbox|hyper-v|docker|wsl|tailscale|zerotier)/i.test(interfaceName);
+
+      candidates.push({ ip, interfaceName: devName, usbLike, virtual });
     }
   }
+  return candidates;
+}
 
-  // Prefer normal private LAN addresses so VPN/virtual adapters do not
-  // accidentally become the QR pairing address.
-  const preferred = candidates.find(item =>
-    item.privateLan &&
-    !/(vpn|virtual|vmware|vbox|hyper-v|docker|wsl|tailscale|zerotier)/i.test(item.interfaceName)
-  );
+function getLocalIpAddress() {
+  const candidates = getNetworkCandidates();
+  const normal = candidates.find(item => !item.virtual && !item.usbLike);
+  const usb = candidates.find(item => item.usbLike && !item.virtual);
+  return (normal || usb || candidates.find(item => !item.virtual) || candidates[0])?.ip || 'localhost';
+}
 
-  return (preferred || candidates.find(item => item.privateLan) || candidates[0])?.ip || 'localhost';
+function getUsbNetworkAddresses() {
+  return getNetworkCandidates()
+    .filter(item => item.usbLike && !item.virtual)
+    .map(item => ({
+      ip: item.ip,
+      interfaceName: item.interfaceName,
+      url: `http://${item.ip}:${port}`,
+      wsUrl: `ws://${item.ip}:${port}`
+    }));
 }
 
 let activeTunnelUrl = null;
@@ -105,6 +117,7 @@ let activeTunnelUrl = null;
 // Endpoint to get connection details for QR Code
 app.get('/api/info', (req, res) => {
   const localIp = getLocalIpAddress();
+  const usbNetworks = getUsbNetworkAddresses();
   const domain = getCloudflareDomain();
   
   // If user provided a domain in settings, use it directly. Otherwise use the process state.
@@ -129,11 +142,14 @@ app.get('/api/info', (req, res) => {
     lanUrl: lanHttpUrl,
     lanHttpUrl,
     lanWsUrl,
+    usbNetworkAvailable: usbNetworks.length > 0,
+    usbNetworks,
     wsUrl: remoteWsUrl || lanWsUrl,
     httpUrl: currentTunnelUrl || lanHttpUrl,
     activeTunnelUrl: currentTunnelUrl,
     pairing: {
-      strategy: 'LAN_FIRST_REMOTE_FALLBACK',
+      strategy: 'LAN_FIRST_USB_NETWORK_REMOTE_FALLBACK',
+      usb: usbNetworks.map(item => `kdr://pair?server=${encodeURIComponent(item.url)}`),
       lan: `kdr://pair?server=${encodeURIComponent(lanHttpUrl)}`,
       remote: currentTunnelUrl ? `kdr://pair?server=${encodeURIComponent(currentTunnelUrl)}` : null
     }
@@ -415,8 +431,11 @@ server.listen(port, () => {
   console.log(`[*] Signaling Server running on: http://localhost:${port}`);
   console.log(`[*] WebSocket Server running on: ws://localhost:${port}`);
   console.log(`[*] Local Network IP: ${localIp}`);
+  const usbNetworks = getUsbNetworkAddresses();
+  if (usbNetworks.length) usbNetworks.forEach(item => console.log(`[*] USB Network: ${item.interfaceName} -> ${item.url}`));
+  else console.log('[*] USB Network: not detected (enable USB tethering if needed)');
   console.log(`==================================================`);
-  console.log(`[USB MODE GUIDE] Run: adb reverse tcp:3000 tcp:3000; adb reverse tcp:${port} tcp:${port}`);
+  console.log(`[USB ADB FALLBACK] adb reverse tcp:3000 tcp:3000 && adb reverse tcp:${port} tcp:${port}`);
   console.log(`==================================================`);
   
   // Start the tunnel automatically
