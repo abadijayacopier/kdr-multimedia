@@ -93,9 +93,26 @@ public class KdrSrtPlugin extends Plugin {
 
     private JSObject statusObject() {
         JSObject result = new JSObject();
-        result.put("running", sender().isRunning());
-        result.put("reconnecting", sender().isReconnecting());
-        result.put("error", sender().lastError());
+        SrtSenderService current = sender();
+        SrtSenderConfig config = current.currentConfig();
+
+        result.put("running", current.isRunning());
+        result.put("reconnecting", current.isReconnecting());
+        result.put("reconnectAttempt", current.reconnectAttempt());
+        result.put("startedAt", current.startedAtMs() == null ? 0 : current.startedAtMs());
+        result.put("error", current.lastError());
+
+        if (config != null) {
+            result.put("endpoint", config.endpoint);
+            result.put("streamId", config.streamId);
+            result.put("latencyMs", config.latencyMs);
+            result.put("width", config.width);
+            result.put("height", config.height);
+            result.put("fps", config.fps);
+            result.put("bitrate", config.bitrate);
+            result.put("audio", config.audio);
+        }
+
         return result;
     }
 }
