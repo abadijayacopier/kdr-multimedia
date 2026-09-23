@@ -69,8 +69,18 @@ jobs:
           variables = root / "variables.gradle"
           if variables.exists():
               s = variables.read_text()
-              s = re.sub(r"(compileSdkVersion\\s*=\\s*)35\\b", r"\\g<1>36", s)
+              s = re.sub(r"(compileSdkVersion\s*=\s*)35\b", r"\g<1>36", s)
               variables.write_text(s)
+
+          # Capacitor templates can also place compileSdk directly in Gradle files.
+          for p in root.rglob("*.gradle"):
+              s = p.read_text()
+              s = re.sub(r"(compileSdk(?:Version)?\s+)(?:=\s*)?35\b", r"\g<1>36", s)
+              p.write_text(s)
+          for p in root.rglob("*.gradle.kts"):
+              s = p.read_text()
+              s = re.sub(r"(compileSdk(?:Version)?\s*\(?\s*)(?:=\s*)?35\b", r"\g<1>36", s)
+              p.write_text(s)
           PY
 
           mkdir -p android/app/src/main/java/com/kdrmultimedia/camera/srt
