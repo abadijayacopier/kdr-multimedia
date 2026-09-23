@@ -1,0 +1,33 @@
+name: Build KDR OBS Controller Windows EXE
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "kdr-obs-controller.cjs"
+      - "kdr-obs-preload.cjs"
+      - "kdr-obs-controller.html"
+      - "electron-builder-obs.json"
+      - "package.json"
+      - "public/**"
+      - ".github/workflows/obs-controller.yml"
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Build KDR OBS Controller
+        run: npx electron-builder --win --config electron-builder-obs.json
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: kdr-obs-controller-windows
+          path: |
+            dist-obs/*.exe
