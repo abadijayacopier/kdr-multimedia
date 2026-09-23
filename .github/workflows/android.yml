@@ -9,6 +9,7 @@ on:
       - "public/**"
       - "capacitor.config.ts"
       - "package.json"
+      - "android-native/**"
       - ".github/workflows/android.yml"
 
 jobs:
