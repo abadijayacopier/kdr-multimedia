@@ -4,6 +4,9 @@
   "directories": {
     "output": "dist-obs"
   },
+  "extraMetadata": {
+    "main": "kdr-obs-controller.cjs"
+  },
   "files": [
     "kdr-obs-controller.cjs",
     "kdr-obs-preload.cjs",
@@ -23,6 +26,5 @@
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "KDR OBS Controller"
-  },
-  "main": "kdr-obs-controller.cjs"
+  }
 }
