@@ -5,11 +5,13 @@ import android.net.Uri
 import android.util.Log
 import android.util.Size
 import io.github.thibaultbee.streampack.core.elements.sources.audio.audiorecord.MicrophoneSourceFactory
+import io.github.thibaultbee.streampack.core.elements.sources.video.camera.CameraSourceFactory
 import io.github.thibaultbee.streampack.core.elements.sources.video.camera.extensions.defaultCameraId
 import io.github.thibaultbee.streampack.core.interfaces.setAudioSource
-import io.github.thibaultbee.streampack.core.interfaces.setCameraId
+import io.github.thibaultbee.streampack.core.interfaces.setVideoSource
 import io.github.thibaultbee.streampack.core.interfaces.startStream
 import io.github.thibaultbee.streampack.core.streamers.single.AudioConfig
+import io.github.thibaultbee.streampack.core.streamers.single.IAudioSingleStreamer
 import io.github.thibaultbee.streampack.core.streamers.single.SingleStreamer
 import io.github.thibaultbee.streampack.core.streamers.single.VideoConfig
 import kotlinx.coroutines.CancellationException
@@ -99,9 +101,17 @@ class SrtSenderService(private val context: Context) {
 
         val cameraStreamer = SingleStreamer(context.applicationContext)
         streamer = cameraStreamer
-        cameraStreamer.setCameraId(defaultCameraId)
+
+        // StreamPack 3.2.x selects the camera through the video source factory.
+        cameraStreamer.setVideoSource(
+            CameraSourceFactory(context.applicationContext.defaultCameraId)
+        )
+
         if (config.audio) {
-            cameraStreamer.setAudioSource(MicrophoneSourceFactory())
+            val audioStreamer = cameraStreamer as? IAudioSingleStreamer
+                ?: throw IllegalStateException("Audio is not supported by SingleStreamer")
+            audioStreamer.setAudioSource(MicrophoneSourceFactory())
+            audioStreamer.setAudioConfig(AudioConfig())
         }
 
         val videoConfig = VideoConfig(
@@ -109,9 +119,6 @@ class SrtSenderService(private val context: Context) {
             resolution = Size(config.width, config.height),
             fps = config.fps
         )
-        if (config.audio) {
-            cameraStreamer.setAudioConfig(AudioConfig())
-        }
         cameraStreamer.setVideoConfig(videoConfig)
 
         Log.i(TAG, "Starting SRT caller: " + endpoint)
