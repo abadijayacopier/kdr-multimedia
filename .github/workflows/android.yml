@@ -67,7 +67,7 @@ jobs:
           if variables.exists():
               s = variables.read_text()
               s = re.sub(r"(compileSdkVersion\\s*=\\s*)35\\b", r"\\g<1>36", s)
-              p.write_text(s) if False else variables.write_text(s)
+              variables.write_text(s)
           PY
 
           mkdir -p android/app/src/main/java/com/kdrmultimedia/camera/srt
