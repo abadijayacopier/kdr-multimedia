@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.util.Size
+import io.github.thibaultbee.streampack.core.streamers.single.AudioConfig
 import io.github.thibaultbee.streampack.core.streamers.single.SingleStreamer
 import io.github.thibaultbee.streampack.core.streamers.single.VideoConfig
 import io.github.thibaultbee.streampack.core.streamers.single.cameraSingleStreamer
@@ -94,17 +95,20 @@ class SrtSenderService(private val context: Context) {
 
         val cameraStreamer = cameraSingleStreamer(
             context = context.applicationContext,
-            audioSourceFactory = null
+            audioSourceFactory = if (config.audio) io.github.thibaultbee.streampack.core.elements.sources.audio.audiorecord.MicrophoneSourceFactory() else null
         )
         streamer = cameraStreamer
 
-        cameraStreamer.setVideoConfig(
-            VideoConfig(
-                startBitrate = config.bitrate,
-                resolution = Size(config.width, config.height),
-                fps = config.fps
-            )
+        val videoConfig = VideoConfig(
+            startBitrate = config.bitrate,
+            resolution = Size(config.width, config.height),
+            fps = config.fps
         )
+        if (config.audio) {
+            cameraStreamer.setConfig(AudioConfig(), videoConfig)
+        } else {
+            cameraStreamer.setVideoConfig(videoConfig)
+        }
 
         Log.i(TAG, "Starting SRT caller: " + endpoint)
         cameraStreamer.startStream(endpoint)
