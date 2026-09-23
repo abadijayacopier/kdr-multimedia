@@ -35,6 +35,16 @@ export default function SenderView({ roomId, roomPin }) {
   const [srtLatency, setSrtLatency] = useState(() => Number(localStorage.getItem('kdr_srt_latency') || 120));
   const [srtBitrate, setSrtBitrate] = useState(() => Number(localStorage.getItem('kdr_srt_bitrate') || 4000000));
   const [srtPassphrase, setSrtPassphrase] = useState(() => localStorage.getItem('kdr_srt_passphrase') || '');
+  const [srtProfiles, setSrtProfiles] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('kdr_srt_profiles') || '[]');
+      return Array.isArray(saved) ? saved : [];
+    } catch (_) {
+      return [];
+    }
+  });
+  const [activeSrtProfile, setActiveSrtProfile] = useState(() => localStorage.getItem('kdr_srt_active_profile') || '');
+  const [newSrtProfileName, setNewSrtProfileName] = useState('');
 
   const localVideoRef = useRef(null);
   const streamRef = useRef(null);
@@ -56,6 +66,59 @@ export default function SenderView({ roomId, roomPin }) {
     : activeResolution === '4k'
       ? { width: 3840, height: 2160 }
       : { width: 1920, height: 1080 };
+
+  const persistSrtProfiles = (profiles) => {
+    setSrtProfiles(profiles);
+    localStorage.setItem('kdr_srt_profiles', JSON.stringify(profiles));
+  };
+
+  const applySrtProfile = (profile) => {
+    if (!profile) return;
+    setActiveSrtProfile(profile.name);
+    localStorage.setItem('kdr_srt_active_profile', profile.name);
+    setSrtEndpoint(profile.endpoint || '');
+    setSrtStreamId(profile.streamId || '');
+    setSrtLatency(Number(profile.latencyMs || 120));
+    setSrtBitrate(Number(profile.bitrate || 4000000));
+    setSrtPassphrase(profile.passphrase || '');
+    setSrtError(null);
+  };
+
+  const saveSrtProfile = () => {
+    const name = newSrtProfileName.trim();
+    const endpoint = srtEndpoint.trim();
+    if (!name) {
+      setSrtError('Nama profil SRT wajib diisi.');
+      return;
+    }
+    if (!/^srt:\/\//i.test(endpoint)) {
+      setSrtError('Endpoint harus diawali srt://');
+      return;
+    }
+    const profile = {
+      name,
+      endpoint,
+      streamId: srtStreamId.trim() || 'kdr-' + roomId,
+      latencyMs: Number(srtLatency) || 120,
+      bitrate: Number(srtBitrate) || 4000000,
+      passphrase: srtPassphrase
+    };
+    const next = [...srtProfiles.filter((item) => item.name !== name), profile];
+    persistSrtProfiles(next);
+    setActiveSrtProfile(name);
+    localStorage.setItem('kdr_srt_active_profile', name);
+    setNewSrtProfileName('');
+    setSrtError(null);
+  };
+
+  const deleteSrtProfile = (name) => {
+    const next = srtProfiles.filter((item) => item.name !== name);
+    persistSrtProfiles(next);
+    if (activeSrtProfile === name) {
+      setActiveSrtProfile('');
+      localStorage.removeItem('kdr_srt_active_profile');
+    }
+  };
 
   const startNativeSrt = async () => {
     const endpoint = srtEndpoint.trim();
@@ -873,6 +936,28 @@ export default function SenderView({ roomId, roomPin }) {
           {showSrtPanel && (
             <div className="glass-panel" style={{ marginTop: '0.5rem', padding: '0.9rem', background: 'rgba(8,9,12,0.94)' }}>
               <div style={{ display: 'grid', gap: '0.55rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.45rem' }}>
+                  <select
+                    className="control-select"
+                    value={activeSrtProfile}
+                    onChange={e => {
+                      const profile = srtProfiles.find((item) => item.name === e.target.value);
+                      if (profile) applySrtProfile(profile);
+                    }}
+                    disabled={srtRunning}
+                  >
+                    <option value="">Profil SRT manual</option>
+                    {srtProfiles.map((profile) => <option key={profile.name} value={profile.name}>{profile.name}</option>)}
+                  </select>
+                  {activeSrtProfile && !srtRunning && (
+                    <button
+                      type="button"
+                      onClick={() => deleteSrtProfile(activeSrtProfile)}
+                      title="Hapus profil"
+                      style={{ borderRadius: '10px', border: '1px solid rgba(255,80,100,0.35)', background: 'rgba(255,60,80,0.12)', color: '#fff', padding: '0 0.7rem' }}
+                    >🗑️</button>
+                  )}
+                </div>
                 <input className="control-input" value={srtEndpoint} onChange={e => setSrtEndpoint(e.target.value)} placeholder="srt://192.168.1.100:9000" disabled={srtRunning} />
                 <input className="control-input" value={srtStreamId} onChange={e => setSrtStreamId(e.target.value)} placeholder="Stream ID" disabled={srtRunning} />
                 <input className="control-input" type="password" value={srtPassphrase} onChange={e => setSrtPassphrase(e.target.value)} placeholder="Passphrase (opsional)" disabled={srtRunning} />
@@ -882,6 +967,21 @@ export default function SenderView({ roomId, roomPin }) {
                     <option value={2000000}>2 Mbps</option><option value={4000000}>4 Mbps</option><option value={6000000}>6 Mbps</option><option value={8000000}>8 Mbps</option>
                   </select>
                 </div>
+                {!srtRunning && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.45rem' }}>
+                    <input
+                      className="control-input"
+                      value={newSrtProfileName}
+                      onChange={e => setNewSrtProfileName(e.target.value)}
+                      placeholder="Nama profil, contoh: OBS Aula"
+                    />
+                    <button
+                      type="button"
+                      onClick={saveSrtProfile}
+                      style={{ borderRadius: '10px', border: '1px solid rgba(0,242,254,0.3)', background: 'rgba(0,242,254,0.1)', color: '#fff', padding: '0 0.8rem', fontWeight: 700 }}
+                    >💾 SIMPAN</button>
+                  </div>
+                )}
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{activeResolution.toUpperCase()} • {activeFps} FPS • {Math.round(Number(srtBitrate) / 1000000)} Mbps • Audio {isAudioEnabled ? 'ON' : 'OFF'}</div>
                 {srtRunning && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem', fontSize: '0.72rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.82)' }}>
