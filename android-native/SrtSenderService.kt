@@ -7,8 +7,6 @@ import android.util.Size
 import io.github.thibaultbee.streampack.core.elements.sources.audio.audiorecord.MicrophoneSourceFactory
 import io.github.thibaultbee.streampack.core.elements.sources.video.camera.CameraSourceFactory
 import io.github.thibaultbee.streampack.core.elements.sources.video.camera.extensions.defaultCameraId
-import io.github.thibaultbee.streampack.core.interfaces.setAudioSource
-import io.github.thibaultbee.streampack.core.interfaces.setVideoSource
 import io.github.thibaultbee.streampack.core.interfaces.startStream
 import io.github.thibaultbee.streampack.core.streamers.single.AudioConfig
 import io.github.thibaultbee.streampack.core.streamers.single.SingleStreamer
@@ -102,12 +100,12 @@ class SrtSenderService(private val context: Context) {
         streamer = cameraStreamer
 
         // StreamPack 3.2.x selects the camera through the video source factory.
-        cameraStreamer.setVideoSource(
+        cameraStreamer.videoInput.setSource(
             CameraSourceFactory(context.applicationContext.defaultCameraId)
         )
 
         if (config.audio) {
-            cameraStreamer.setAudioSource(MicrophoneSourceFactory())
+            cameraStreamer.audioInput.setSource(MicrophoneSourceFactory())
             cameraStreamer.setAudioConfig(AudioConfig())
         }
 
