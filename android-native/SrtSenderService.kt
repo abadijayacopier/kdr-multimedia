@@ -95,7 +95,7 @@ class SrtSenderService(private val context: Context) {
 
         val cameraStreamer = cameraSingleStreamer(
             context = context.applicationContext,
-            audioSourceFactory = if (config.audio) io.github.thibaultbee.streampack.core.elements.sources.audio.audiorecord.MicrophoneSourceFactory() else null
+            audioSourceFactory = if (config.audio) MicrophoneSourceFactory() else null
         )
         streamer = cameraStreamer
 
@@ -105,10 +105,9 @@ class SrtSenderService(private val context: Context) {
             fps = config.fps
         )
         if (config.audio) {
-            cameraStreamer.setConfig(AudioConfig(), videoConfig)
-        } else {
-            cameraStreamer.setVideoConfig(videoConfig)
+            cameraStreamer.setAudioConfig(AudioConfig())
         }
+        cameraStreamer.setVideoConfig(videoConfig)
 
         Log.i(TAG, "Starting SRT caller: " + endpoint)
         cameraStreamer.startStream(endpoint)
