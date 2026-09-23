@@ -17,7 +17,8 @@
     "cap:sync": "npm run build && npx cap sync",
     "mobile:android": "npm run cap:sync && npx cap open android",
     "mobile:ios": "npm run cap:sync && npx cap open ios",
-    "mobile:add": "npx cap add android && npx cap add ios"
+    "mobile:add": "npx cap add android && npx cap add ios",
+    "srt:relay": "node server/srt-relay.js"
   },
   "dependencies": {
     "express": "^4.19.2",
@@ -43,9 +44,22 @@
   "build": {
     "appId": "com.kdrmultimedia.cameramirror",
     "productName": "KDR Multimedia Camera Mirroring",
-    "directories": { "output": "dist-electron" },
-    "files": ["dist/**/*","server/**/*","main.cjs","package.json"],
-    "win": { "target": ["nsis","portable"], "icon": "public/icon.png" },
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "server/**/*",
+      "main.cjs",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "public/icon.png"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
