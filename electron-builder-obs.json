@@ -1,8 +1,28 @@
 {
-  "appId":"com.kdrmultimedia.obscontroller",
-  "productName":"KDR OBS Controller",
-  "directories":{"output":"dist-obs"},
-  "files":["kdr-obs-controller.cjs","kdr-obs-preload.cjs","kdr-obs-controller.html","public/**/*"],
-  "win":{"target":["portable","nsis"],"icon":"public/icon.png"},
-  "nsis":{"oneClick":false,"allowToChangeInstallationDirectory":true,"createDesktopShortcut":true,"createStartMenuShortcut":true,"shortcutName":"KDR OBS Controller"}
+  "appId": "com.kdrmultimedia.obscontroller",
+  "productName": "KDR OBS Controller",
+  "directories": {
+    "output": "dist-obs"
+  },
+  "files": [
+    "kdr-obs-controller.cjs",
+    "kdr-obs-preload.cjs",
+    "kdr-obs-controller.html",
+    "public/**/*"
+  ],
+  "win": {
+    "target": [
+      "portable",
+      "nsis"
+    ],
+    "icon": "public/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "KDR OBS Controller"
+  },
+  "main": "kdr-obs-controller.cjs"
 }
