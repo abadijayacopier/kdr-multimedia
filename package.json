@@ -18,7 +18,8 @@
     "mobile:android": "npm run cap:sync && npx cap open android",
     "mobile:ios": "npm run cap:sync && npx cap open ios",
     "mobile:add": "npx cap add android && npx cap add ios",
-    "srt:relay": "node server/srt-relay.js"
+    "srt:relay": "node server/srt-relay.js",
+    "obs:dist": "electron-builder --win --config electron-builder-obs.json"
   },
   "dependencies": {
     "express": "^4.19.2",
