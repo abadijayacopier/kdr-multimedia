@@ -48,6 +48,19 @@ jobs:
           app_gradle = Path("android/app/build.gradle")
           s = app_gradle.read_text()
 
+          # Add a Maven Central mirror before dependency resolution. GitHub-hosted
+          # runners can occasionally receive HTTP 403 from repo.maven.apache.org.
+          # Google's Maven Central mirror uses the same Maven repository layout.
+          root_gradle = Path("android/build.gradle")
+          root_s = root_gradle.read_text()
+          mirror_repo = 'maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2") }'
+          if mirror_repo not in root_s:
+              if "repositories {" in root_s:
+                  root_s = root_s.replace("repositories {", "repositories {\\n        " + mirror_repo, 1)
+              else:
+                  root_s = "buildscript {\\n    repositories {\\n        " + mirror_repo + "\\n    }\\n}\\n\\n" + root_s
+              root_gradle.write_text(root_s)
+
           # Enable Kotlin using the legacy Gradle plugin application. This is robust
           # with the generated Capacitor Gradle project and avoids plugin DSL/version
           # resolution differences.
