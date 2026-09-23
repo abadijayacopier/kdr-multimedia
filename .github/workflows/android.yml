@@ -106,6 +106,10 @@ jobs:
           cp android-native/KdrSrtPlugin.java android/app/src/main/java/com/kdrmultimedia/camera/srt/KdrSrtPlugin.java
           cp android-native/MainActivity.java android/app/src/main/java/com/kdrmultimedia/camera/MainActivity.java
 
+          # Professional KDR launcher icon
+          mkdir -p android/app/src/main/res/drawable-nodpi
+          cp public/icon.png android/app/src/main/res/drawable-nodpi/kdr_icon.png
+
           python3 - <<'PY'
           from pathlib import Path
           p = Path("android/app/src/main/AndroidManifest.xml")
@@ -147,9 +151,16 @@ jobs:
         working-directory: android
         run: ./gradlew :app:assembleDebug --stacktrace --info
 
+      - name: Rename APK
+        shell: bash
+        run: |
+          set -e
+          test -f android/app/build/outputs/apk/debug/app-debug.apk
+          mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/kdr-camera.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: kdr-camera-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: kdr-camera-apk
+          path: android/app/build/outputs/apk/debug/kdr-camera.apk
           if-no-files-found: error
