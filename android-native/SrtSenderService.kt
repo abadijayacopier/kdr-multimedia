@@ -4,10 +4,14 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.util.Size
+import io.github.thibaultbee.streampack.core.elements.sources.audio.audiorecord.MicrophoneSourceFactory
+import io.github.thibaultbee.streampack.core.elements.sources.video.camera.extensions.defaultCameraId
+import io.github.thibaultbee.streampack.core.interfaces.setAudioSource
+import io.github.thibaultbee.streampack.core.interfaces.setCameraId
+import io.github.thibaultbee.streampack.core.interfaces.startStream
 import io.github.thibaultbee.streampack.core.streamers.single.AudioConfig
 import io.github.thibaultbee.streampack.core.streamers.single.SingleStreamer
 import io.github.thibaultbee.streampack.core.streamers.single.VideoConfig
-import io.github.thibaultbee.streampack.core.streamers.single.cameraSingleStreamer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -93,11 +97,12 @@ class SrtSenderService(private val context: Context) {
     private suspend fun openAndStream(config: SrtSenderConfig) {
         val endpoint = buildSrtEndpoint(config)
 
-        val cameraStreamer = cameraSingleStreamer(
-            context = context.applicationContext,
-            audioSourceFactory = if (config.audio) MicrophoneSourceFactory() else null
-        )
+        val cameraStreamer = SingleStreamer(context.applicationContext)
         streamer = cameraStreamer
+        cameraStreamer.setCameraId(defaultCameraId)
+        if (config.audio) {
+            cameraStreamer.setAudioSource(MicrophoneSourceFactory())
+        }
 
         val videoConfig = VideoConfig(
             startBitrate = config.bitrate,
