@@ -56,9 +56,9 @@ jobs:
           mirror_repo = 'maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2") }'
           if mirror_repo not in root_s:
               if "repositories {" in root_s:
-                  root_s = root_s.replace("repositories {", "repositories {\\n        " + mirror_repo, 1)
+                  root_s = root_s.replace("repositories {", "repositories {\n        " + mirror_repo, 1)
               else:
-                  root_s = "buildscript {\\n    repositories {\\n        " + mirror_repo + "\\n    }\\n}\\n\\n" + root_s
+                  root_s = "buildscript {\n    repositories {\n        " + mirror_repo + "\n    }\n}\n\n" + root_s
               root_gradle.write_text(root_s)
 
           # Enable Kotlin using the legacy Gradle plugin application. This is robust
