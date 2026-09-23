@@ -36,6 +36,8 @@ class SrtSenderService(private val context: Context) {
     private var reconnecting = false
     private var lastConfig: SrtSenderConfig? = null
     private var lastError: String? = null
+    private var reconnectAttempt = 0
+    private var startedAtMs: Long? = null
 
     fun start(config: SrtSenderConfig) {
         require(config.endpoint.startsWith("srt://")) { "SRT endpoint must start with srt://" }
@@ -46,6 +48,8 @@ class SrtSenderService(private val context: Context) {
         stop()
         lastConfig = config
         lastError = null
+        reconnectAttempt = 0
+        startedAtMs = System.currentTimeMillis()
         running = true
 
         streamJob = scope.launch {
@@ -53,9 +57,12 @@ class SrtSenderService(private val context: Context) {
             while (running && lastConfig === config) {
                 try {
                     reconnecting = attempt > 0
+                    reconnectAttempt = attempt
                     openAndStream(config)
                     attempt = 0
+                    reconnectAttempt = 0
                     reconnecting = false
+                    lastError = null
 
                     if (running) {
                         throw IllegalStateException("SRT stream stopped unexpectedly")
@@ -69,18 +76,22 @@ class SrtSenderService(private val context: Context) {
                     if (!running || lastConfig !== config) break
 
                     attempt++
+                    reconnectAttempt = attempt
                     reconnecting = true
                     val backoffMs = minOf(8000L, 1000L * (1L shl minOf(attempt - 1, 3)))
                     delay(backoffMs)
                 }
             }
             reconnecting = false
+            reconnectAttempt = 0
         }
     }
 
     fun stop() {
         running = false
         reconnecting = false
+        reconnectAttempt = 0
+        startedAtMs = null
         streamJob?.cancel()
         streamJob = null
         closeStreamerAsync()
