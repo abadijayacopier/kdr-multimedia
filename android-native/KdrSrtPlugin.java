@@ -103,14 +103,14 @@ public class KdrSrtPlugin extends Plugin {
         result.put("error", current.lastError());
 
         if (config != null) {
-            result.put("endpoint", config.endpoint);
-            result.put("streamId", config.streamId);
-            result.put("latencyMs", config.latencyMs);
-            result.put("width", config.width);
-            result.put("height", config.height);
-            result.put("fps", config.fps);
-            result.put("bitrate", config.bitrate);
-            result.put("audio", config.audio);
+            result.put("endpoint", config.getEndpoint());
+            result.put("streamId", config.getStreamId());
+            result.put("latencyMs", config.getLatencyMs());
+            result.put("width", config.getWidth());
+            result.put("height", config.getHeight());
+            result.put("fps", config.getFps());
+            result.put("bitrate", config.getBitrate());
+            result.put("audio", config.getAudio());
         }
 
         return result;
