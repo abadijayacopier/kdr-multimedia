@@ -53,7 +53,7 @@ jobs:
           # resolution differences.
           root_gradle = Path("android/build.gradle")
           root_s = root_gradle.read_text()
-          kotlin_classpath = 'classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20"'
+          kotlin_classpath = 'classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21"'
           if kotlin_classpath not in root_s:
               if "buildscript {" in root_s and "dependencies {" in root_s:
                   root_s = root_s.replace("dependencies {", "dependencies {\n        " + kotlin_classpath, 1)
