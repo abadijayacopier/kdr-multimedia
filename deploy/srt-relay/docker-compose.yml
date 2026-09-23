@@ -1,0 +1,14 @@
+services:
+  kdr-srt-relay:
+    build:
+      context: ../..
+      dockerfile: deploy/srt-relay/Dockerfile
+    restart: unless-stopped
+    environment:
+      SRT_LISTEN_PORT: ${SRT_LISTEN_PORT:-9000}
+      SRT_OUTPUT_URL: ${SRT_OUTPUT_URL:-}
+      SRT_STREAM_ID: ${SRT_STREAM_ID:-kdr-camera}
+      SRT_LATENCY: ${SRT_LATENCY:-120}
+      SRT_PASSPHRASE: ${SRT_PASSPHRASE:-}
+    ports:
+      - "${SRT_LISTEN_PORT:-9000}:${SRT_LISTEN_PORT:-9000}/udp"
