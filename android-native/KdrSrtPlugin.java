@@ -50,7 +50,7 @@ public class KdrSrtPlugin extends Plugin {
             ));
             call.resolve(statusObject());
         } catch (Throwable t) {
-            call.reject(t.getMessage() == null ? "Failed to start SRT" : t.getMessage(), t);
+            call.reject(t.getMessage() == null ? "Failed to start SRT" : t.getMessage(), new Exception(t));
         }
     }
 
