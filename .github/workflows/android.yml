@@ -43,29 +43,33 @@ jobs:
           set -e
           python3 - <<'PY'
           from pathlib import Path
-          p = Path("android/app/build.gradle")
-          s = p.read_text()
-          deps = '    implementation "io.github.thibaultbee.streampack:streampack-core:3.2.0"\n    implementation "io.github.thibaultbee.streampack:streampack-srt:3.2.0"\n'
+          import re
+
+          app_gradle = Path("android/app/build.gradle")
+          s = app_gradle.read_text()
+          deps = (
+              '    implementation "io.github.thibaultbee.streampack:streampack-core:3.2.0"\n'
+              '    implementation "io.github.thibaultbee.streampack:streampack-srt:3.2.0"\n'
+          )
           if "streampack-core:3.2.0" not in s:
               s = s.replace("dependencies {", "dependencies {\n" + deps, 1)
-          p.write_text(s)
+          app_gradle.write_text(s)
 
-          # StreamPack 3.2.x pulls AndroidX Core 1.17, which requires
-          # Android Gradle Plugin 8.9.1+ and compileSdk 36.
-          python3 - <<'PY'
-          from pathlib import Path
           root = Path("android")
-          for p in [root / "build.gradle", root / "settings.gradle", root / "build.gradle.kts", root / "settings.gradle.kts"]:
+          for p in [
+              root / "build.gradle",
+              root / "settings.gradle",
+              root / "build.gradle.kts",
+              root / "settings.gradle.kts",
+          ]:
               if p.exists():
-                  s = p.read_text()
-                  s = s.replace("8.7.2", "8.9.1")
+                  s = p.read_text().replace("8.7.2", "8.9.1")
                   p.write_text(s)
 
           variables = root / "variables.gradle"
           if variables.exists():
               s = variables.read_text()
-              s = s.replace("compileSdkVersion = 35", "compileSdkVersion = 36")
-              s = s.replace("compileSdkVersion=35", "compileSdkVersion=36")
+              s = re.sub(r"(compileSdkVersion\\s*=\\s*)35\\b", r"\\g<1>36", s)
               variables.write_text(s)
           PY
 
@@ -85,6 +89,8 @@ jobs:
           ]
           marker = '<manifest '
           insert_at = s.find('>', s.find(marker)) + 1
+          if insert_at <= 0:
+              raise SystemExit("AndroidManifest.xml: <manifest> tag not found")
           block = '\n' + '\n'.join(permissions) + '\n'
           if 'android.permission.CAMERA' not in s:
               s = s[:insert_at] + block + s[insert_at:]
