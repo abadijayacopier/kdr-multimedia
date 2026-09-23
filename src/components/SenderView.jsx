@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { KdrSrt } from '../native/SrtSender';
 
 export default function SenderView({ roomId, roomPin }) {
   const [status, setStatus] = useState('Menginisialisasi...');
@@ -22,6 +23,15 @@ export default function SenderView({ roomId, roomPin }) {
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [activeFps, setActiveFps] = useState(30);
   const [isTallyActive, setIsTallyActive] = useState(false);
+  const [srtRunning, setSrtRunning] = useState(false);
+  const [srtReconnecting, setSrtReconnecting] = useState(false);
+  const [srtError, setSrtError] = useState(null);
+  const [showSrtPanel, setShowSrtPanel] = useState(false);
+  const [srtEndpoint, setSrtEndpoint] = useState(() => localStorage.getItem('kdr_srt_endpoint') || 'srt://192.168.1.100:9000');
+  const [srtStreamId, setSrtStreamId] = useState(() => localStorage.getItem('kdr_srt_stream_id') || `kdr-${roomId}`);
+  const [srtLatency, setSrtLatency] = useState(() => Number(localStorage.getItem('kdr_srt_latency') || 120));
+  const [srtBitrate, setSrtBitrate] = useState(() => Number(localStorage.getItem('kdr_srt_bitrate') || 4000000));
+  const [srtPassphrase, setSrtPassphrase] = useState(() => localStorage.getItem('kdr_srt_passphrase') || '');
 
   const localVideoRef = useRef(null);
   const streamRef = useRef(null);
@@ -29,6 +39,72 @@ export default function SenderView({ roomId, roomPin }) {
   const pcRef = useRef(null);
   const queuedCandidatesRef = useRef([]);
   const wakeLockRef = useRef(null);
+
+  const srtDimensions = activeResolution === '720p'
+    ? { width: 1280, height: 720 }
+    : activeResolution === '4k'
+      ? { width: 3840, height: 2160 }
+      : { width: 1920, height: 1080 };
+
+  const startNativeSrt = async () => {
+    const endpoint = srtEndpoint.trim();
+    if (!/^srt:\/\//i.test(endpoint)) {
+      setSrtError('Endpoint harus diawali srt://');
+      return;
+    }
+    try {
+      setSrtError(null);
+      localStorage.setItem('kdr_srt_endpoint', endpoint);
+      localStorage.setItem('kdr_srt_stream_id', srtStreamId.trim() || 'kdr-' + roomId);
+      localStorage.setItem('kdr_srt_latency', String(srtLatency));
+      localStorage.setItem('kdr_srt_bitrate', String(srtBitrate));
+      localStorage.setItem('kdr_srt_passphrase', srtPassphrase);
+      if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
+      stopAllMedia();
+      setStatus('Memulai SRT native...');
+      const result = await KdrSrt.start({
+        endpoint,
+        streamId: srtStreamId.trim() || 'kdr-' + roomId,
+        passphrase: srtPassphrase.trim() || undefined,
+        latencyMs: Number(srtLatency),
+        width: srtDimensions.width,
+        height: srtDimensions.height,
+        fps: Number(activeFps),
+        bitrate: Number(srtBitrate),
+        audio: Boolean(isAudioEnabled)
+      });
+      setSrtRunning(Boolean(result?.running));
+      setSrtReconnecting(Boolean(result?.reconnecting));
+      setSrtError(result?.error || null);
+      setStatus(result?.reconnecting ? 'SRT reconnecting...' : 'SRT LIVE');
+    } catch (err) {
+      setSrtRunning(false);
+      setSrtError(err?.message || 'Gagal memulai SRT');
+      setStatus('SRT gagal: ' + (err?.message || 'error'));
+    }
+  };
+
+  const stopNativeSrt = async () => {
+    try { await KdrSrt.stop(); } catch (err) { setSrtError(err?.message || 'Gagal menghentikan SRT'); }
+    setSrtRunning(false);
+    setSrtReconnecting(false);
+    setStatus('SRT berhenti. Membuka kembali kamera...');
+    await setupCamera(activeCamera, activeResolution, activeFps, isAudioEnabled);
+  };
+
+  useEffect(() => {
+    if (!srtRunning) return;
+    const timer = setInterval(async () => {
+      try {
+        const result = await KdrSrt.status();
+        setSrtRunning(Boolean(result?.running));
+        setSrtReconnecting(Boolean(result?.reconnecting));
+        setSrtError(result?.error || null);
+        if (result?.running) setStatus(result?.reconnecting ? 'SRT RECONNECTING' : 'SRT LIVE');
+      } catch (_) {}
+    }, 1500);
+    return () => clearInterval(timer);
+  }, [srtRunning]);
 
   // Screen Wake Lock API
   useEffect(() => {
@@ -756,6 +832,31 @@ export default function SenderView({ roomId, roomPin }) {
             <span className={`badge-dot ${connected ? 'blink' : ''}`}></span>
             {connected ? 'ONLINE' : 'OFFLINE'}
           </div>
+        </div>
+
+        {/* Native SRT controls */}
+        <div style={{ position: 'absolute', top: '88px', left: '1rem', right: '1rem', zIndex: 20 }}>
+          <button onClick={() => setShowSrtPanel(v => !v)} style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '12px', border: '1px solid rgba(0,242,254,0.25)', background: 'rgba(0,0,0,0.62)', color: '#fff', backdropFilter: 'blur(10px)', fontWeight: 700 }}>
+            {srtRunning ? '🔴 SRT LIVE' : '📡 SRT STREAM'} {showSrtPanel ? '▲' : '▼'}
+          </button>
+          {showSrtPanel && (
+            <div className="glass-panel" style={{ marginTop: '0.5rem', padding: '0.9rem', background: 'rgba(8,9,12,0.94)' }}>
+              <div style={{ display: 'grid', gap: '0.55rem' }}>
+                <input className="control-input" value={srtEndpoint} onChange={e => setSrtEndpoint(e.target.value)} placeholder="srt://192.168.1.100:9000" disabled={srtRunning} />
+                <input className="control-input" value={srtStreamId} onChange={e => setSrtStreamId(e.target.value)} placeholder="Stream ID" disabled={srtRunning} />
+                <input className="control-input" type="password" value={srtPassphrase} onChange={e => setSrtPassphrase(e.target.value)} placeholder="Passphrase (opsional)" disabled={srtRunning} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem' }}>
+                  <input className="control-input" type="number" min="20" max="1000" value={srtLatency} onChange={e => setSrtLatency(Number(e.target.value))} placeholder="Latency ms" disabled={srtRunning} />
+                  <select className="control-select" value={srtBitrate} onChange={e => setSrtBitrate(Number(e.target.value))} disabled={srtRunning}>
+                    <option value={2000000}>2 Mbps</option><option value={4000000}>4 Mbps</option><option value={6000000}>6 Mbps</option><option value={8000000}>8 Mbps</option>
+                  </select>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{activeResolution.toUpperCase()} • {activeFps} FPS • Audio {isAudioEnabled ? 'ON' : 'OFF'}</div>
+                {srtError && <div style={{ color: 'var(--accent-red)', fontSize: '0.75rem' }}>⚠️ {srtError}</div>}
+                {!srtRunning ? <button className="btn btn-primary" onClick={startNativeSrt}>🔴 MULAI SRT</button> : <button className="btn btn-danger" onClick={stopNativeSrt}>⏹ STOP SRT</button>}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Center status message */}
