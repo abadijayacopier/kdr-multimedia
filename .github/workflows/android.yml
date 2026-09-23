@@ -54,8 +54,6 @@ jobs:
           # Android Gradle Plugin 8.9.1+ and compileSdk 36.
           python3 - <<'PY'
           from pathlib import Path
-          import re
-
           root = Path("android")
           for p in [root / "build.gradle", root / "settings.gradle", root / "build.gradle.kts", root / "settings.gradle.kts"]:
               if p.exists():
@@ -66,7 +64,8 @@ jobs:
           variables = root / "variables.gradle"
           if variables.exists():
               s = variables.read_text()
-              s = re.sub(r"(compileSdkVersion\\s*=\\s*)35\\b", r"\\g<1>36", s)
+              s = s.replace("compileSdkVersion = 35", "compileSdkVersion = 36")
+              s = s.replace("compileSdkVersion=35", "compileSdkVersion=36")
               variables.write_text(s)
           PY
 
