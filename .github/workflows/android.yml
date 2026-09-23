@@ -36,6 +36,24 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Prepare native SRT dependencies
+        shell: bash
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+          dep = '    implementation "io.github.thibaultbee.streampack:streampack-core:3.2.0"\\n    implementation "io.github.thibaultbee.streampack:streampack-srt:3.2.0"\\n'
+          if "streampack-core:3.2.0" not in s:
+              s = s.replace("dependencies {", "dependencies {\\n" + dep, 1)
+          p.write_text(s)
+          PY
+
+          mkdir -p android/app/src/main/java/com/kdrmultimedia/camera/srt
+          cp android-native/SrtSenderConfig.kt android/app/src/main/java/com/kdrmultimedia/camera/srt/SrtSenderConfig.kt
+          cp android-native/SrtSenderService.kt android/app/src/main/java/com/kdrmultimedia/camera/srt/SrtSenderService.kt
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
