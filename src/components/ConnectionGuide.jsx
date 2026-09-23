@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 
 export default function ConnectionGuide({ roomId, serverInfo, pin }) {
-  const [activeTab, setActiveTab] = useState('tunnel');
+  const [activeTab, setActiveTab] = useState('wifi-ip');
   const [qrUrl, setQrUrl] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -106,7 +106,7 @@ export default function ConnectionGuide({ roomId, serverInfo, pin }) {
           className={`btn ${activeTab === 'tunnel' ? 'btn-primary' : 'btn-secondary'}`}
           style={{ padding: '0.6rem 0.4rem', fontSize: '0.75rem', fontWeight: 600 }}
         >
-          🌐 Tunneling (Rekomendasi)
+          🌐 Remote Live
         </button>
         <button
           onClick={() => setActiveTab('wifi-ip')}
@@ -135,7 +135,7 @@ export default function ConnectionGuide({ roomId, serverInfo, pin }) {
       {activeTab === 'tunnel' && (
         <div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.2rem', lineHeight: '1.4' }}>
-            Menghubungkan HP melalui internet tunnel publik yang aman (HTTPS). <b>Bisa untuk Android & iPhone (Safari)</b> lintas jaringan / paket data seluler tanpa ribet konfigurasi sertifikat SSL.
+            <b>Remote Live</b> untuk kamera yang berada jauh dari lokasi acara. HP memakai 4G/5G, sedangkan PC OBS tetap di lokasi acara. Signaling memakai HTTPS tunnel dan video tetap memakai WebRTC dengan STUN/TURN agar real-time. <b>LAN/Wi-Fi dan USB tetap menjadi jalur utama saat kamera dekat.</b>
           </p>
 
           {tunnelUrl ? (
@@ -157,7 +157,7 @@ export default function ConnectionGuide({ roomId, serverInfo, pin }) {
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
               <div style={{ fontSize: '1.5rem', animation: 'blink 1s infinite alternate', marginBottom: '0.5rem' }}>🌀</div>
-              Menghubungkan ke localhost.run Tunnel... (Mohon tunggu)
+              Menyiapkan jalur Remote Live... (Mohon tunggu)
             </div>
           )}
         </div>
