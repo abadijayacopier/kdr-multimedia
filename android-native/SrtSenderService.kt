@@ -102,6 +102,8 @@ class SrtSenderService(private val context: Context) {
     fun isRunning(): Boolean = running
     fun isReconnecting(): Boolean = reconnecting
     fun lastError(): String? = lastError
+    fun reconnectAttempt(): Int = reconnectAttempt
+    fun startedAtMs(): Long? = startedAtMs
     fun currentConfig(): SrtSenderConfig? = lastConfig
 
     private suspend fun openAndStream(config: SrtSenderConfig) {
