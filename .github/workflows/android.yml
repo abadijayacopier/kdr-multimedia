@@ -45,9 +45,9 @@ jobs:
           from pathlib import Path
           p = Path("android/app/build.gradle")
           s = p.read_text()
-          dep = '    implementation "io.github.thibaultbee.streampack:streampack-core:3.2.0"\\n    implementation "io.github.thibaultbee.streampack:streampack-srt:3.2.0"\\n'
+          deps = '    implementation "io.github.thibaultbee.streampack:streampack-core:3.2.0"\n    implementation "io.github.thibaultbee.streampack:streampack-srt:3.2.0"\n'
           if "streampack-core:3.2.0" not in s:
-              s = s.replace("dependencies {", "dependencies {\\n" + dep, 1)
+              s = s.replace("dependencies {", "dependencies {\n" + deps, 1)
           p.write_text(s)
           PY
 
@@ -67,7 +67,7 @@ jobs:
           ]
           marker = '<manifest '
           insert_at = s.find('>', s.find(marker)) + 1
-          block = '\\n' + '\\n'.join(permissions) + '\\n'
+          block = '\n' + '\n'.join(permissions) + '\n'
           if 'android.permission.CAMERA' not in s:
               s = s[:insert_at] + block + s[insert_at:]
           p.write_text(s)
