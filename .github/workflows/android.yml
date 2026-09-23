@@ -125,6 +125,8 @@ jobs:
           block = '\n' + '\n'.join(permissions) + '\n'
           if 'android.permission.CAMERA' not in s:
               s = s[:insert_at] + block + s[insert_at:]
+          # Use the KDR professional launcher icon generated from public/icon.png
+          s = s.replace('android:icon="@mipmap/ic_launcher"', 'android:icon="@drawable/kdr_icon"')
           p.write_text(s)
           PY
 
