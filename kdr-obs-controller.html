@@ -43,6 +43,13 @@ button:disabled{opacity:.45;cursor:not-allowed}.grid{display:grid;grid-template-
 <h2>Scene OBS</h2><div id="scenes">Hubungkan OBS untuk memuat scene.</div>
 </section>
 <section class="card">
+<h2>📡 KDR Camera SRT → OBS</h2>
+<div class="row"><input id="srtUrl" placeholder="srt://0.0.0.0:9000?mode=listener"><input id="srtName" value="KDR Camera SRT" placeholder="Nama Source OBS"></div>
+<div class="row"><button class="primary" id="createSrt">Buat / Update SRT Source</button><button id="refreshSrt">Refresh</button></div>
+<p class="hint"><small>OBS menerima SRT melalui Media Source/FFmpeg. Untuk listener, gunakan URL seperti <b>srt://0.0.0.0:9000?mode=listener</b> dan format MPEGTS.</small></p>
+<div class="stat"><div class="label">SRT Source</div><div class="value" id="srtSourceState">Belum dibuat</div></div>
+</section>
+<section class="card">
 <h2>Monitoring</h2>
 <div class="grid">
 <div class="stat"><div class="label">SRT</div><div class="value" id="srt">BELUM TERHUBUNG</div></div>
@@ -112,10 +119,43 @@ async function refresh(){
  }catch(e){log(e.message)}
 }
 async function doAction(type,data={}){try{await call(type,data);await refresh()}catch(e){log(e.message)}}
+async function ensureSrtSource(){
+ const inputName=$('srtName').value.trim()||'KDR Camera SRT';
+ const input=$('srtUrl').value.trim();
+ if(!input) throw Error('Isi URL SRT terlebih dahulu');
+ const current=await call('GetInputList');
+ const exists=(current.inputs||[]).find(x=>x.inputName===inputName);
+ const settings={is_local_file:false,input:input,input_format:'mpegts',restart_on_activate:true,close_when_inactive:false};
+ if(exists){
+   await call('SetInputSettings',{inputName,inputSettings:settings,overlay:true});
+   $('srtSourceState').textContent='SOURCE DIPERBARUI';
+   log('SRT source diperbarui: '+inputName);
+ }else{
+   const scene=await call('GetCurrentProgramScene');
+   await call('CreateInput',{sceneName:scene.currentProgramSceneName,inputName,inputKind:'ffmpeg_source',inputSettings:settings,sceneItemEnabled:true});
+   $('srtSourceState').textContent='SOURCE DIBUAT';
+   log('SRT source dibuat di scene '+scene.currentProgramSceneName+': '+inputName);
+ }
+ await refresh();
+}
+async function refreshSrtSource(){
+ try{
+  const name=$('srtName').value.trim()||'KDR Camera SRT';
+  const r=await call('GetInputList');
+  const x=(r.inputs||[]).find(i=>i.inputName===name);
+  $('srtSourceState').textContent=x?'SOURCE TERSEDIA':'BELUM DIBUAT';
+  if(x){
+   const s=await call('GetInputSettings',{inputName:name});
+   if(s.inputSettings?.input&&!$('srtUrl').value)$('srtUrl').value=s.inputSettings.input;
+  }
+ }catch(e){log(e.message)}
+}
 $('connect').onclick=connect;$('disconnect').onclick=()=>{if(ws)ws.close()};
 $('startStream').onclick=()=>doAction('StartStream');$('stopStream').onclick=()=>doAction('StopStream');
 $('startRecord').onclick=()=>doAction('StartRecord');$('stopRecord').onclick=()=>doAction('StopRecord');
 $('mute').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,inputMuted:true});
 $('unmute').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,inputMuted:false});
+$('createSrt').onclick=()=>ensureSrtSource().catch(e=>log(e.message));
+$('refreshSrt').onclick=refreshSrtSource;
 setButtons(false);log('KDR OBS Controller siap.');
 </script></body></html>
