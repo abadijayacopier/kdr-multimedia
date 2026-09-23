@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KDR OBS Controller</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#08090c;color:#f5f7fa;font-family:Segoe UI,Arial,sans-serif}
+header{padding:22px 28px;border-bottom:1px solid #20242c;display:flex;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:24px}small{color:#8791a1}.badge{padding:7px 12px;border-radius:20px;background:#252a33;color:#aab3c0}
+main{padding:24px;display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.card{background:#11151b;border:1px solid #242a33;border-radius:14px;padding:18px}
+h2{font-size:16px;margin:0 0 15px}.row{display:flex;gap:10px;margin-bottom:10px}.row>*{flex:1}
+input,select{width:100%;background:#090c10;color:#fff;border:1px solid #303744;border-radius:8px;padding:11px}
+button{border:0;border-radius:9px;padding:11px 14px;background:#242b35;color:#fff;cursor:pointer;font-weight:600}button:hover{filter:brightness(1.15)}button.primary{background:#087f8c}button.danger{background:#a8324d}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:14px;background:#0b0f14;border-radius:10px;border:1px solid #202630}.label{font-size:11px;color:#7f8998;text-transform:uppercase}.value{margin-top:6px;font-size:18px;font-weight:700}
+.scene{display:flex;gap:8px;align-items:center;margin:7px 0}.scene span{flex:1}
+.log{height:160px;overflow:auto;background:#080b0f;padding:10px;border-radius:8px;font:12px Consolas,monospace;color:#aeb8c7}
+@media(max-width:850px){main{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header><div><h1>🎥 KDR OBS Controller</h1><small>Controller Windows untuk OBS Studio</small></div><div id="conn" class="badge">OFFLINE</div></header>
+<main>
+<section class="card">
+<h2>OBS WebSocket</h2>
+<div class="row"><input id="host" value="ws://127.0.0.1:4455" placeholder="ws://127.0.0.1:4455"><input id="password" type="password" placeholder="Password OBS (opsional)"></div>
+<div class="row"><button class="primary" id="connect">Hubungkan OBS</button><button id="disconnect">Putuskan</button></div>
+<div class="grid">
+<div class="stat"><div class="label">Streaming</div><div class="value" id="stream">OFF</div></div>
+<div class="stat"><div class="label">Recording</div><div class="value" id="record">OFF</div></div>
+<div class="stat"><div class="label">Scene</div><div class="value" id="currentScene">-</div></div>
+<div class="stat"><div class="label">FPS / Bitrate</div><div class="value" id="stats">-</div></div>
+</div>
+</section>
+<section class="card">
+<h2>Kontrol</h2>
+<div class="row"><button class="primary" id="startStream">▶ Start Streaming</button><button class="danger" id="stopStream">■ Stop Streaming</button></div>
+<div class="row"><button class="primary" id="startRecord">● Start Recording</button><button class="danger" id="stopRecord">■ Stop Recording</button></div>
+<h2 style="margin-top:18px">Audio</h2>
+<div class="row"><button id="mute">🔇 Mute</button><button id="unmute">🔊 Unmute</button></div>
+</section>
+<section class="card">
+<h2>Scene OBS</h2><div id="scenes">Hubungkan OBS untuk memuat scene.</div>
+</section>
+<section class="card">
+<h2>Monitoring</h2>
+<div class="grid">
+<div class="stat"><div class="label">SRT</div><div class="value" id="srt">BELUM TERHUBUNG</div></div>
+<div class="stat"><div class="label">Status OBS</div><div class="value" id="obsState">Offline</div></div>
+</div>
+<p><small>SRT akan diintegrasikan ke monitoring KDR Camera pada tahap berikutnya.</small></p>
+</section>
+<section class="card" style="grid-column:1/-1"><h2>Log</h2><div class="log" id="log"></div></section>
+</main>
+<script>
+let ws=null, rid=1, pending=new Map(), scenes=[];
+const $=id=>document.getElementById(id);
+function log(x){$('log').innerHTML += '['+new Date().toLocaleTimeString()+'] '+x+'<br>'; $('log').scrollTop=999999}
+function call(op,d={}){return new Promise((resolve,reject)=>{if(!ws||ws.readyState!==1)return reject(Error('OBS belum terhubung'));const id=String(rid++);pending.set(id,{resolve,reject});ws.send(JSON.stringify({op:6,d:{requestType:op,requestId:id,requestData:d}}));});}
+function setConn(ok){$('conn').textContent=ok?'TERHUBUNG':'OFFLINE';$('conn').style.color=ok?'#55e39b':'';$('obsState').textContent=ok?'Connected':'Offline'}
+async function connect(){
+ if(ws) ws.close(); const url=$('host').value.trim(); ws=new WebSocket(url);
+ ws.onopen=()=>log('WebSocket terbuka');
+ ws.onmessage=async e=>{const m=JSON.parse(e.data);if(m.op===0){const hello=m.d;let auth; if(hello.authentication){const crypto=await import('data:text/javascript,export default '+encodeURIComponent(''));}
+ const identify={op:1,d:{rpcVersion:1,eventSubscriptions:33}}; 
+ if(hello.authentication && $('password').value){const crypto=window.crypto; /* authentication handled below */ }
+ ws.send(JSON.stringify(identify));}
+ else if(m.op===2){setConn(true);log('OBS terhubung');refresh();}
+ else if(m.op===7){const p=pending.get(m.d.requestId);if(p){pending.delete(m.d.requestId);m.d.requestStatus.result?p.resolve(m.d.responseData||{}):p.reject(Error(m.d.requestStatus.comment||'OBS error'));}}
+ else if(m.op===5){handleEvent(m.d);}
+ };
+ ws.onerror=()=>log('WebSocket error');
+ ws.onclose=()=>{setConn(false);log('OBS terputus')};
+}
+function handleEvent(d){if(d.eventType==='StreamStateChanged'){$('stream').textContent=d.eventData.outputActive?'LIVE':'OFF'} if(d.eventType==='RecordStateChanged')$('record').textContent=d.eventData.outputActive?'REC':'OFF';if(d.eventType==='CurrentProgramSceneChanged')$('currentScene').textContent=d.eventData.sceneName}
+async function refresh(){try{let x=await call('GetStreamStatus');$('stream').textContent=x.outputActive?'LIVE':'OFF';let r=await call('GetRecordStatus');$('record').textContent=r.outputActive?'REC':'OFF';let s=await call('GetCurrentProgramScene');$('currentScene').textContent=s.currentProgramSceneName;let l=await call('GetSceneList');scenes=l.scenes||[];$('scenes').innerHTML='';scenes.forEach(s=>{let d=document.createElement('div');d.className='scene';d.innerHTML='<span>'+s.sceneName+'</span><button>Aktifkan</button>';d.querySelector('button').onclick=()=>call('SetCurrentProgramScene',{sceneName:s.sceneName}).then(refresh);$('scenes').appendChild(d)});let st=await call('GetStats');$('stats').textContent=Math.round(st.activeFps||0)+' FPS';}catch(e){log(e.message)}}
+$('connect').onclick=connect;$('disconnect').onclick=()=>ws&&ws.close();
+[['startStream','StartStream'],['stopStream','StopStream'],['startRecord','StartRecord'],['stopRecord','StopRecord'],['mute','SetInputMute'],['unmute','SetInputMute']].forEach(([id,op])=>$(id).onclick=()=>{let d={};if(op==='SetInputMute'){d.inputName='Mic/Aux';d.inputMuted=id==='mute'}call(op,d).then(refresh).catch(e=>log(e.message))});
+</script></body></html>
