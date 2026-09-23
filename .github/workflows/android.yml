@@ -46,6 +46,13 @@ jobs:
           import re
 
           app_gradle = Path("android/app/build.gradle")
+          # Enable Kotlin because the native SRT implementation is written in Kotlin.
+          if "org.jetbrains.kotlin.android" not in s:
+              s = s.replace(
+                  "plugins {",
+                  "plugins {\n    id 'org.jetbrains.kotlin.android' version '2.2.20'",
+                  1
+              )
           s = app_gradle.read_text()
           deps = (
               '    implementation "io.github.thibaultbee.streampack:streampack-core:3.2.0"\n'
