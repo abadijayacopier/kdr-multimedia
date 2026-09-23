@@ -143,10 +143,18 @@ async function refreshSrtSource(){
   const name=$('srtName').value.trim()||'KDR Camera SRT';
   const r=await call('GetInputList');
   const x=(r.inputs||[]).find(i=>i.inputName===name);
-  $('srtSourceState').textContent=x?'SOURCE TERSEDIA':'BELUM DIBUAT';
-  if(x){
-   const s=await call('GetInputSettings',{inputName:name});
-   if(s.inputSettings?.input&&!$('srtUrl').value)$('srtUrl').value=s.inputSettings.input;
+  if(!x){$('srtSourceState').textContent='BELUM DIBUAT';$('srt').textContent='SOURCE OFF';return}
+  const s=await call('GetInputSettings',{inputName:name});
+  if(s.inputSettings?.input&&!$('srtUrl').value)$('srtUrl').value=s.inputSettings.input;
+  try{
+    const status=await call('GetInputStatus',{inputName:name});
+    const active=status.inputActive===true;
+    $('srtSourceState').textContent=active?'SOURCE AKTIF':'SOURCE TERSEDIA';
+    $('srt').textContent=active?'LIVE / RECEIVING':'SOURCE IDLE';
+    $('srt').className='value '+(active?'ok':'warn');
+  }catch{
+    $('srtSourceState').textContent='SOURCE TERSEDIA';
+    $('srt').textContent='TERSEDIA';
   }
  }catch(e){log(e.message)}
 }
