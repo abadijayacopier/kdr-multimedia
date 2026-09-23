@@ -54,6 +54,24 @@ jobs:
           mkdir -p android/app/src/main/java/com/kdrmultimedia/camera/srt
           cp android-native/SrtSenderConfig.kt android/app/src/main/java/com/kdrmultimedia/camera/srt/SrtSenderConfig.kt
           cp android-native/SrtSenderService.kt android/app/src/main/java/com/kdrmultimedia/camera/srt/SrtSenderService.kt
+          cp android-native/KdrSrtPlugin.java android/app/src/main/java/com/kdrmultimedia/camera/srt/KdrSrtPlugin.java
+          cp android-native/MainActivity.java android/app/src/main/java/com/kdrmultimedia/camera/MainActivity.java
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text()
+          permissions = [
+              '    <uses-permission android:name="android.permission.CAMERA" />',
+              '    <uses-permission android:name="android.permission.RECORD_AUDIO" />',
+          ]
+          marker = '<manifest '
+          insert_at = s.find('>', s.find(marker)) + 1
+          block = '\\n' + '\\n'.join(permissions) + '\\n'
+          if 'android.permission.CAMERA' not in s:
+              s = s[:insert_at] + block + s[insert_at:]
+          p.write_text(s)
+          PY
 
       - name: Setup Java
         uses: actions/setup-java@v4
