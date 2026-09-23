@@ -26,6 +26,9 @@ export default function SenderView({ roomId, roomPin }) {
   const [srtRunning, setSrtRunning] = useState(false);
   const [srtReconnecting, setSrtReconnecting] = useState(false);
   const [srtError, setSrtError] = useState(null);
+  const [srtReconnectAttempt, setSrtReconnectAttempt] = useState(0);
+  const [srtStartedAt, setSrtStartedAt] = useState(0);
+  const [srtRuntime, setSrtRuntime] = useState(0);
   const [showSrtPanel, setShowSrtPanel] = useState(false);
   const [srtEndpoint, setSrtEndpoint] = useState(() => localStorage.getItem('kdr_srt_endpoint') || 'srt://192.168.1.100:9000');
   const [srtStreamId, setSrtStreamId] = useState(() => localStorage.getItem('kdr_srt_stream_id') || `kdr-${roomId}`);
@@ -39,6 +42,14 @@ export default function SenderView({ roomId, roomPin }) {
   const pcRef = useRef(null);
   const queuedCandidatesRef = useRef([]);
   const wakeLockRef = useRef(null);
+
+  const formatSrtDuration = (ms) => {
+    const total = Math.floor(Math.max(0, ms) / 1000);
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+    return [hours, minutes, seconds].map((value, index) => index === 0 ? String(value).padStart(2, '0') : String(value).padStart(2, '0')).join(':');
+  };
 
   const srtDimensions = activeResolution === '720p'
     ? { width: 1280, height: 720 }
@@ -75,6 +86,9 @@ export default function SenderView({ roomId, roomPin }) {
       });
       setSrtRunning(Boolean(result?.running));
       setSrtReconnecting(Boolean(result?.reconnecting));
+      setSrtReconnectAttempt(Number(result?.reconnectAttempt || 0));
+      setSrtStartedAt(Number(result?.startedAt || 0));
+      setSrtRuntime(result?.startedAt ? Math.max(0, Date.now() - Number(result.startedAt)) : 0);
       setSrtError(result?.error || null);
       setStatus(result?.reconnecting ? 'SRT reconnecting...' : 'SRT LIVE');
     } catch (err) {
@@ -88,6 +102,9 @@ export default function SenderView({ roomId, roomPin }) {
     try { await KdrSrt.stop(); } catch (err) { setSrtError(err?.message || 'Gagal menghentikan SRT'); }
     setSrtRunning(false);
     setSrtReconnecting(false);
+    setSrtReconnectAttempt(0);
+    setSrtStartedAt(0);
+    setSrtRuntime(0);
     setStatus('SRT berhenti. Membuka kembali kamera...');
     await setupCamera(activeCamera, activeResolution, activeFps, isAudioEnabled);
   };
@@ -99,12 +116,26 @@ export default function SenderView({ roomId, roomPin }) {
         const result = await KdrSrt.status();
         setSrtRunning(Boolean(result?.running));
         setSrtReconnecting(Boolean(result?.reconnecting));
+        setSrtReconnectAttempt(Number(result?.reconnectAttempt || 0));
+        setSrtStartedAt(Number(result?.startedAt || 0));
+        setSrtRuntime(result?.startedAt ? Math.max(0, Date.now() - Number(result.startedAt)) : 0);
         setSrtError(result?.error || null);
         if (result?.running) setStatus(result?.reconnecting ? 'SRT RECONNECTING' : 'SRT LIVE');
       } catch (_) {}
     }, 1500);
     return () => clearInterval(timer);
   }, [srtRunning]);
+
+  useEffect(() => {
+    if (!srtRunning || !srtStartedAt) {
+      setSrtRuntime(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setSrtRuntime(Math.max(0, Date.now() - srtStartedAt));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [srtRunning, srtStartedAt]);
 
   // Screen Wake Lock API
   useEffect(() => {
@@ -837,7 +868,7 @@ export default function SenderView({ roomId, roomPin }) {
         {/* Native SRT controls */}
         <div style={{ position: 'absolute', top: '88px', left: '1rem', right: '1rem', zIndex: 20 }}>
           <button onClick={() => setShowSrtPanel(v => !v)} style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '12px', border: '1px solid rgba(0,242,254,0.25)', background: 'rgba(0,0,0,0.62)', color: '#fff', backdropFilter: 'blur(10px)', fontWeight: 700 }}>
-            {srtRunning ? '🔴 SRT LIVE' : '📡 SRT STREAM'} {showSrtPanel ? '▲' : '▼'}
+            {srtRunning ? (srtReconnecting ? '🟠 SRT RECONNECTING' : '🔴 SRT LIVE') : '📡 SRT STREAM'} {showSrtPanel ? '▲' : '▼'}
           </button>
           {showSrtPanel && (
             <div className="glass-panel" style={{ marginTop: '0.5rem', padding: '0.9rem', background: 'rgba(8,9,12,0.94)' }}>
@@ -851,7 +882,15 @@ export default function SenderView({ roomId, roomPin }) {
                     <option value={2000000}>2 Mbps</option><option value={4000000}>4 Mbps</option><option value={6000000}>6 Mbps</option><option value={8000000}>8 Mbps</option>
                   </select>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{activeResolution.toUpperCase()} • {activeFps} FPS • Audio {isAudioEnabled ? 'ON' : 'OFF'}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{activeResolution.toUpperCase()} • {activeFps} FPS • {Math.round(Number(srtBitrate) / 1000000)} Mbps • Audio {isAudioEnabled ? 'ON' : 'OFF'}</div>
+                {srtRunning && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem', fontSize: '0.72rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.82)' }}>
+                    <div>STATUS: {srtReconnecting ? 'RECONNECTING' : 'CONNECTED'}</div>
+                    <div>RETRY: {srtReconnectAttempt}</div>
+                    <div>DURASI: {formatSrtDuration(srtRuntime)}</div>
+                    <div>LATENCY: {srtLatency} ms</div>
+                  </div>
+                )}
                 {srtError && <div style={{ color: 'var(--accent-red)', fontSize: '0.75rem' }}>⚠️ {srtError}</div>}
                 {!srtRunning ? <button className="btn btn-primary" onClick={startNativeSrt}>🔴 MULAI SRT</button> : <button className="btn btn-danger" onClick={stopNativeSrt}>⏹ STOP SRT</button>}
               </div>
