@@ -11,7 +11,6 @@ import io.github.thibaultbee.streampack.core.interfaces.setAudioSource
 import io.github.thibaultbee.streampack.core.interfaces.setVideoSource
 import io.github.thibaultbee.streampack.core.interfaces.startStream
 import io.github.thibaultbee.streampack.core.streamers.single.AudioConfig
-import io.github.thibaultbee.streampack.core.streamers.single.IAudioSingleStreamer
 import io.github.thibaultbee.streampack.core.streamers.single.SingleStreamer
 import io.github.thibaultbee.streampack.core.streamers.single.VideoConfig
 import kotlinx.coroutines.CancellationException
@@ -108,10 +107,8 @@ class SrtSenderService(private val context: Context) {
         )
 
         if (config.audio) {
-            val audioStreamer = cameraStreamer as? IAudioSingleStreamer
-                ?: throw IllegalStateException("Audio is not supported by SingleStreamer")
-            audioStreamer.setAudioSource(MicrophoneSourceFactory())
-            audioStreamer.setAudioConfig(AudioConfig())
+            cameraStreamer.setAudioSource(MicrophoneSourceFactory())
+            cameraStreamer.setAudioConfig(AudioConfig())
         }
 
         val videoConfig = VideoConfig(
