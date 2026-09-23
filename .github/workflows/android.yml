@@ -48,11 +48,12 @@ jobs:
           app_gradle = Path("android/app/build.gradle")
           s = app_gradle.read_text()
 
-          # Enable Kotlin deterministically for the generated Capacitor project.
-          # Capacitor's generated app Gradle can use either plugins{} or legacy apply-plugin syntax.
+          # Enable Kotlin using the legacy Gradle plugin application. This is robust
+          # with the generated Capacitor Gradle project and avoids plugin DSL/version
+          # resolution differences.
           root_gradle = Path("android/build.gradle")
           root_s = root_gradle.read_text()
-          kotlin_classpath = 'classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20"'
+          kotlin_classpath = 'classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20"'
           if kotlin_classpath not in root_s:
               if "buildscript {" in root_s and "dependencies {" in root_s:
                   root_s = root_s.replace("dependencies {", "dependencies {\n        " + kotlin_classpath, 1)
@@ -60,15 +61,9 @@ jobs:
                   root_s = "buildscript {\n    dependencies {\n        " + kotlin_classpath + "\n    }\n}\n\n" + root_s
               root_gradle.write_text(root_s)
 
-          if "org.jetbrains.kotlin.android" not in s:
-              if "plugins {" in s:
-                  s = s.replace(
-                      "plugins {",
-                      "plugins {\n    id 'org.jetbrains.kotlin.android'",
-                      1
-                  )
-              else:
-                  s = "apply plugin: 'org.jetbrains.kotlin.android'\n" + s
+          if "apply plugin: 'org.jetbrains.kotlin.android'" not in s:
+              s = "apply plugin: 'org.jetbrains.kotlin.android'\n" + s
+
           deps = (
               '    implementation "io.github.thibaultbee.streampack:streampack-core:3.2.0"\n'
               '    implementation "io.github.thibaultbee.streampack:streampack-srt:3.2.0"\n'
