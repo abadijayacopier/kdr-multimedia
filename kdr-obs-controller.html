@@ -6,7 +6,7 @@
 <style>
 *{box-sizing:border-box}html,body{height:100%}body{margin:0;background:#070a0f;color:#f5f7fa;font-family:Segoe UI,Arial,sans-serif}
 button,input,select{font:inherit}button{border:0;border-radius:9px;padding:11px 14px;background:#242b35;color:#fff;cursor:pointer;font-weight:600}button:hover{filter:brightness(1.15)}button.primary{background:#087f8c}button.danger{background:#a8324d}button:disabled{opacity:.45;cursor:not-allowed}
-.app{height:100vh;display:grid;grid-template-columns:235px 1fr;overflow:hidden}.sidebar{background:#0b0f15;border-right:1px solid #202732;padding:18px 12px;display:flex;flex-direction:column}.brand{padding:8px 10px 22px;border-bottom:1px solid #202630;margin-bottom:14px}.brand strong{font-size:18px}.brand small{display:block;color:#7f8998;margin-top:4px}.nav{display:grid;gap:5px}.nav button{background:transparent;text-align:left;color:#aab3c0;padding:12px 13px;border-radius:9px}.nav button:hover{background:#151b24}.nav button.active{background:#087f8c;color:#fff}.sidebar-footer{margin-top:auto;border-top:1px solid #202630;padding:14px 10px;color:#7f8998;font-size:12px}.online-dot{color:#55e39b;font-weight:700}.content{min-width:0;overflow:auto}.topbar{height:76px;padding:16px 26px;border-bottom:1px solid #20242c;display:flex;justify-content:space-between;align-items:center;background:#090d13;position:sticky;top:0;z-index:2}.topbar h1{margin:0;font-size:22px}.topbar small{color:#8791a1}.badge{padding:7px 12px;border-radius:20px;background:#252a33;color:#aab3c0}.page{display:none;padding:24px;max-width:1400px;margin:auto}.page.active{display:block}.page-title{margin:0 0 6px;font-size:24px}.page-subtitle{color:#7f8998;margin:0 0 18px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.cards.three{grid-template-columns:repeat(3,minmax(0,1fr))}.card{background:#11151b;border:1px solid #242a33;border-radius:14px;padding:18px}.card h2{font-size:16px;margin:0 0 15px}.wide{grid-column:1/-1}.row{display:flex;gap:10px;margin-bottom:10px}.row>*{flex:1}input,select{width:100%;background:#090c10;color:#fff;border:1px solid #303744;border-radius:8px;padding:11px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:14px;background:#0b0f14;border-radius:10px;border:1px solid #202630}.label{font-size:11px;color:#7f8998;text-transform:uppercase}.value{margin-top:6px;font-size:18px;font-weight:700}.scene{display:flex;gap:8px;align-items:center;margin:7px 0}.scene span{flex:1}.log{height:190px;overflow:auto;background:#080b0f;padding:10px;border-radius:8px;font:12px Consolas,monospace;color:#aeb8c7}.hint{margin:7px 0 0;color:#8791a1}.ok{color:#55e39b}.warn{color:#f0c674}.bad{color:#ff6b81}.hero{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}.hero-preview{min-height:250px;display:flex;align-items:center;justify-content:center;background:#080b10;border:1px solid #202630;border-radius:12px;color:#657083}.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.qr-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.qr-box{background:#fff;padding:10px;border-radius:10px}.nav-note{font-size:11px;color:#667180;margin-top:10px}
+.app{height:100vh;display:grid;grid-template-columns:235px 1fr;overflow:hidden}.sidebar{background:#0b0f15;border-right:1px solid #202732;padding:18px 12px;display:flex;flex-direction:column}.brand{padding:8px 10px 22px;border-bottom:1px solid #202630;margin-bottom:14px}.brand strong{font-size:18px}.brand small{display:block;color:#7f8998;margin-top:4px}.nav{display:grid;gap:5px}.nav button{background:transparent;text-align:left;color:#aab3c0;padding:12px 13px;border-radius:9px}.nav button:hover{background:#151b24}.nav button.active{background:#087f8c;color:#fff}.sidebar-footer{margin-top:auto;border-top:1px solid #202630;padding:14px 10px;color:#7f8998;font-size:12px}.online-dot{color:#55e39b;font-weight:700}.content{min-width:0;overflow:auto}.topbar{height:76px;padding:16px 26px;border-bottom:1px solid #20242c;display:flex;justify-content:space-between;align-items:center;background:#090d13;position:sticky;top:0;z-index:2}.topbar h1{margin:0;font-size:22px}.topbar small{color:#8791a1}.badge{padding:7px 12px;border-radius:20px;background:#252a33;color:#aab3c0}.page{display:none;padding:24px;max-width:1400px;margin:auto}.page.active{display:block}.page-title{margin:0 0 6px;font-size:24px}.page-subtitle{color:#7f8998;margin:0 0 18px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.cards.three{grid-template-columns:repeat(3,minmax(0,1fr))}.card{background:#11151b;border:1px solid #242a33;border-radius:14px;padding:18px}.card h2{font-size:16px;margin:0 0 15px}.wide{grid-column:1/-1}.row{display:flex;gap:10px;margin-bottom:10px}.row>*{flex:1}input,select{width:100%;background:#090c10;color:#fff;border:1px solid #303744;border-radius:8px;padding:11px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:14px;background:#0b0f14;border-radius:10px;border:1px solid #202630}.label{font-size:11px;color:#7f8998;text-transform:uppercase}.value{margin-top:6px;font-size:18px;font-weight:700}.scene{display:flex;gap:8px;align-items:center;margin:7px 0}.scene span{flex:1}.log{height:190px;overflow:auto;background:#080b0f;padding:10px;border-radius:8px;font:12px Consolas,monospace;color:#aeb8c7}.hint{margin:7px 0 0;color:#8791a1}.ok{color:#55e39b}.warn{color:#f0c674}.bad{color:#ff6b81}.hero{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}.hero-preview{min-height:250px;display:flex;align-items:center;justify-content:center;background:#080b10;border:1px solid #202630;border-radius:12px;color:#657083;overflow:hidden;position:relative}.hero-preview img{display:block;width:100%;height:auto;max-height:420px;object-fit:contain}.preview-empty{padding:30px;text-align:center}.toast{position:fixed;right:22px;bottom:22px;z-index:20;background:#121820;border:1px solid #2b3542;border-radius:10px;padding:12px 16px;box-shadow:0 12px 35px rgba(0,0,0,.35);opacity:0;transform:translateY(8px);transition:.2s}.toast.show{opacity:1;transform:none}.top-actions{display:flex;gap:8px;align-items:center}.connection-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:#8791a1;margin-right:6px}.connection-dot.online{background:#55e39b;box-shadow:0 0 8px #55e39b}.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.qr-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.qr-box{background:#fff;padding:10px;border-radius:10px}.nav-note{font-size:11px;color:#667180;margin-top:10px}
 @media(max-width:900px){.app{grid-template-columns:72px 1fr}.brand strong,.brand small,.nav button span,.sidebar-footer{display:none}.nav button{text-align:center;font-size:20px}.hero{grid-template-columns:1fr}.cards,.cards.three{grid-template-columns:1fr}.kpi{grid-template-columns:repeat(2,1fr)}}
 </style></head>
 <body>
@@ -26,7 +26,7 @@ button,input,select{font:inherit}button{border:0;border-radius:9px;padding:11px 
   <div class="sidebar-footer">● <span class="online-dot">OBS</span><br><span id="sidebarConn">Offline</span></div>
 </aside>
 <div class="content">
-<header class="topbar"><div><h1 id="pageHeading">Dashboard</h1><small>KDR OBS Controller • Windows</small></div><div id="conn" class="badge">OFFLINE</div></header>
+<header class="topbar"><div><h1 id="pageHeading">Dashboard</h1><small>KDR OBS Controller • Windows</small></div><div class="top-actions"><button id="refreshAll" title="Refresh">↻</button><div id="conn" class="badge"><span class="connection-dot"></span>OFFLINE</div></div></header>
 
 <section class="page active" id="page-dashboard">
 <h2 class="page-title">Dashboard</h2><p class="page-subtitle">Kontrol utama OBS dan monitoring KDR Camera.</p>
@@ -37,7 +37,7 @@ button,input,select{font:inherit}button{border:0;border-radius:9px;padding:11px 
 <div class="stat"><div class="label">FPS / Bitrate</div><div class="value" id="stats">-</div></div>
 </div>
 <div class="hero" style="margin-top:18px">
-<div class="card"><h2>Preview</h2><div class="hero-preview">Preview OBS akan tampil di sini setelah koneksi WebSocket aktif.</div></div>
+<div class="card"><h2>Preview OBS <button id="refreshPreview" style="float:right;padding:6px 9px;font-size:12px">↻</button></h2><div class="hero-preview"><div id="previewEmpty" class="preview-empty">Preview OBS akan tampil di sini setelah koneksi WebSocket aktif.</div><img id="obsPreview" alt="Preview OBS" hidden></div></div>
 <div class="card"><h2>Quick Control</h2>
 <div class="row"><button class="primary" id="startStream">▶ Start Streaming</button><button class="danger" id="stopStream">■ Stop</button></div>
 <div class="row"><button class="primary" id="startRecord">● Start Recording</button><button class="danger" id="stopRecord">■ Stop</button></div>
@@ -110,12 +110,12 @@ button,input,select{font:inherit}button{border:0;border-radius:9px;padding:11px 
 <section class="page" id="page-settings"><h2 class="page-title">Pengaturan</h2><p class="page-subtitle">Koneksi OBS WebSocket dan informasi aplikasi.</p><div class="card"><h2>OBS WebSocket</h2><div class="row"><input id="hostSettings" placeholder="ws://127.0.0.1:4455"><button id="copyHost">Salin ke Dashboard</button></div><p class="hint">Port default OBS WebSocket adalah 4455.</p></div></section>
 
 <section class="page" id="page-log"><div class="card"><h2>Log Sistem</h2><div class="log" id="log"></div></div></section>
-</div></div>
+</div></div><div id="toast" class="toast"></div>
 <script>
 let ws=null,rid=1,pending=new Map(),refreshTimer=null;
 const $=id=>document.getElementById(id);
-function log(x){$('log').innerHTML+='['+new Date().toLocaleTimeString()+'] '+x+'<br>';$('log').scrollTop=999999}
-function setConn(ok){$('conn').textContent=ok?'TERHUBUNG':'OFFLINE';$('conn').style.color=ok?'#55e39b':'';$('sidebarConn').textContent=ok?'Connected':'Offline';$('obsState')&&($('obsState').textContent=ok?'Connected':'Offline');}
+function log(x){$('log').innerHTML+='['+new Date().toLocaleTimeString()+'] '+x+'<br>';$('log').scrollTop=999999} function toast(x){const t=$('toast');t.textContent=x;t.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.classList.remove('show'),2200)}
+function setConn(ok){$('conn').innerHTML='<span class="connection-dot '+(ok?'online':'')+'"></span>'+(ok?'TERHUBUNG':'OFFLINE');$('conn').style.color=ok?'#55e39b':'';$('sidebarConn').textContent=ok?'Connected':'Offline';$('obsState')&&($('obsState').textContent=ok?'Connected':'Offline');}
 function setButtons(ok){['startStream','stopStream','startRecord','stopRecord','mute','unmute'].forEach(id=>$(id).disabled=!ok)}
 function call(type,data={}){return new Promise((resolve,reject)=>{if(!ws||ws.readyState!==WebSocket.OPEN)return reject(Error('OBS belum terhubung'));const id=String(rid++);pending.set(id,{resolve,reject});ws.send(JSON.stringify({op:6,d:{requestType:type,requestId:id,requestData:data}}));setTimeout(()=>{if(pending.has(id)){pending.delete(id);reject(Error('Timeout: '+type))}},8000)})}
 function bytesToBase64(bytes){let s='';for(const b of new Uint8Array(bytes))s+=String.fromCharCode(b);return btoa(s)}
@@ -150,9 +150,9 @@ async function connect(){
  ws.onclose=()=>{clearInterval(refreshTimer);setConn(false);setButtons(false);for(const p of pending.values())p.reject(Error('Koneksi OBS terputus'));pending.clear();log('OBS terputus')};
 }
 function handleEvent(d){
- if(d.eventType==='StreamStateChanged'){$('stream').textContent=d.eventData.outputActive?'LIVE':'OFF'}
- if(d.eventType==='RecordStateChanged')$('record').textContent=d.eventData.outputActive?'REC':'OFF';
- if(d.eventType==='CurrentProgramSceneChanged')$('currentScene').textContent=d.eventData.sceneName;
+ if(d.eventType==='StreamStateChanged'){$('stream').textContent=d.eventData.outputActive?'LIVE':'OFF';syncPageStates();toast(d.eventData.outputActive?'Streaming dimulai':'Streaming berhenti')}
+ if(d.eventType==='RecordStateChanged'){$('record').textContent=d.eventData.outputActive?'REC':'OFF';syncPageStates();toast(d.eventData.outputActive?'Recording dimulai':'Recording berhenti')}
+ if(d.eventType==='CurrentProgramSceneChanged'){$('currentScene').textContent=d.eventData.sceneName;toast('Scene: '+d.eventData.sceneName)}
 }
 async function refresh(){
  try{
@@ -169,9 +169,20 @@ async function refresh(){
    if(!audio.options.length){const o=document.createElement('option');o.value='Mic/Aux';o.textContent='Mic/Aux';audio.appendChild(o)}
   }catch(e){log('Gagal memuat input audio: '+e.message)}
   await refreshSrtSource();
+  await refreshPreview();
  }catch(e){log(e.message)}
 }
-async function doAction(type,data={}){try{await call(type,data);await refresh()}catch(e){log(e.message)}}
+async function refreshPreview(){
+ try{
+  if(!ws||ws.readyState!==WebSocket.OPEN)return;
+  const scene=await call('GetCurrentProgramScene');
+  const r=await call('GetSourceScreenshot',{sourceName:scene.currentProgramSceneName,imageFormat:'jpg',imageWidth:960,imageHeight:540});
+  if(r.imageData){
+   $('obsPreview').src=r.imageData;$('obsPreview').hidden=false;$('previewEmpty').hidden=true;
+  }
+ }catch(e){$('obsPreview').hidden=true;$('previewEmpty').hidden=false;$('previewEmpty').textContent='Preview belum tersedia: '+e.message}
+}
+async function doAction(type,data={}){try{await call(type,data);await refresh();toast('Perintah berhasil')}catch(e){log(e.message);toast(e.message)}}
 async function ensureSrtSource(){
  const inputName=$('srtName').value.trim()||'KDR Camera SRT';
  const input=$('srtUrl').value.trim();
@@ -251,3 +262,7 @@ $('createSrt').onclick=()=>ensureSrtSource().catch(e=>log(e.message));
 $('refreshSrt').onclick=refreshSrtSource;
 setButtons(false);log('KDR OBS Controller siap.');refreshSrtQr();
 </script></body></html>
+<script>
+$('refreshAll').onclick=()=>refresh();
+$('refreshPreview').onclick=()=>refreshPreview();
+</script>
