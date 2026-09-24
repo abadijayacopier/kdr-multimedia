@@ -50,6 +50,18 @@ button:disabled{opacity:.45;cursor:not-allowed}.grid{display:grid;grid-template-
 <div class="stat"><div class="label">SRT Source</div><div class="value" id="srtSourceState">Belum dibuat</div></div>
 </section>
 <section class="card">
+<h2>📷 QR SRT untuk KDR Camera</h2>
+<div class="row"><input id="srtHost" readonly placeholder="IP PC"><input id="srtPort" value="9000" inputmode="numeric" placeholder="Port"></div>
+<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+  <div style="background:#fff;padding:10px;border-radius:10px"><img id="srtQr" alt="QR konfigurasi SRT" width="220" height="220"></div>
+  <div style="min-width:220px;flex:1">
+    <div class="stat"><div class="label">Endpoint HP</div><div class="value" id="srtEndpointPc">srt://IP-PC:9000</div></div>
+    <p class="hint"><small>Di KDR Camera pilih <b>📡 SRT → OBS</b>, lalu tekan <b>SCAN QR OBS</b>. QR berisi IP PC dan port listener.</small></p>
+    <button id="refreshQr">🔄 Perbarui QR</button>
+  </div>
+</div>
+</section>
+<section class="card">
 <h2>Monitoring</h2>
 <div class="grid">
 <div class="stat"><div class="label">SRT</div><div class="value" id="srt">BELUM TERHUBUNG</div></div>
@@ -158,6 +170,19 @@ async function refreshSrtSource(){
   }
  }catch(e){log(e.message)}
 }
+async function refreshSrtQr(){
+ try{
+  if(!window.kdrObs?.getSrtConfig){log('Fitur QR SRT belum tersedia. Build ulang KDR OBS Controller.');return}
+  const port=Number($('srtPort').value)||9000;
+  const cfg=await window.kdrObs.getSrtConfig(port);
+  $('srtHost').value=cfg.host;
+  $('srtPort').value=String(cfg.port);
+  $('srtQr').src=cfg.qrDataUrl;
+  $('srtEndpointPc').textContent='srt://'+cfg.host+':'+cfg.port;
+  $('srtUrl').value='srt://0.0.0.0:'+cfg.port+'?mode=listener';
+ }catch(e){log('Gagal membuat QR SRT: '+e.message)}
+}
+$('refreshQr').onclick=refreshSrtQr;
 $('connect').onclick=connect;$('disconnect').onclick=()=>{if(ws)ws.close()};
 $('startStream').onclick=()=>doAction('StartStream');$('stopStream').onclick=()=>doAction('StopStream');
 $('startRecord').onclick=()=>doAction('StartRecord');$('stopRecord').onclick=()=>doAction('StopRecord');
@@ -165,5 +190,5 @@ $('mute').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,i
 $('unmute').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,inputMuted:false});
 $('createSrt').onclick=()=>ensureSrtSource().catch(e=>log(e.message));
 $('refreshSrt').onclick=refreshSrtSource;
-setButtons(false);log('KDR OBS Controller siap.');
+setButtons(false);log('KDR OBS Controller siap.');refreshSrtQr();
 </script></body></html>
