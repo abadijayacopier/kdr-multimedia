@@ -26,6 +26,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const [isTallyActive, setIsTallyActive] = useState(false);
   const [batteryLevel, setBatteryLevel] = useState(null);
   const [batteryCharging, setBatteryCharging] = useState(false);
+  const [networkType, setNetworkType] = useState('NET');
+  const [networkQuality, setNetworkQuality] = useState('');
   const [srtRunning, setSrtRunning] = useState(false);
   const [srtReconnecting, setSrtReconnecting] = useState(false);
   const [srtError, setSrtError] = useState(null);
@@ -85,6 +87,22 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   }, []);
 
   const batteryIcon = batteryCharging ? '⚡' : batteryLevel === null ? '🔋' : batteryLevel <= 15 ? '🪫' : batteryLevel <= 35 ? '🔋' : '🔋';
+
+  useEffect(() => {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (!connection) return;
+    const updateNetwork = () => {
+      const type = connection.effectiveType || connection.type || 'NET';
+      const label = String(type).toUpperCase();
+      setNetworkType(label === '4G' ? '4G' : label === '5G' ? '5G' : label);
+      setNetworkQuality(connection.downlink ? connection.downlink + ' Mbps' : '');
+    };
+    updateNetwork();
+    connection.addEventListener?.('change', updateNetwork);
+    return () => connection.removeEventListener?.('change', updateNetwork);
+  }, []);
+
+
 
   const localVideoRef = useRef(null);
   const streamRef = useRef(null);
@@ -1089,18 +1107,23 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
       <div className="mobile-overlay">
         {/* Top Header */}
         <div className="mobile-header">
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '1rem', fontWeight: 600, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-              📹 KDR Multimedia Sender
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+              📹 KDR Multimedia
             </span>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-              {connectionMode === 'srt' ? 'SRT → OBS' : `Room: ${roomId}`}
+            <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.72)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+              {connectionMode === 'srt' ? 'SRT → OBS' : `Room: ${roomId}`} • {activeResolution.toUpperCase()} • {activeFps} FPS
             </span>
           </div>
           <div className={`badge ${connectionMode === 'srt' ? (srtRunning ? 'badge-connected' : 'badge-disconnected') : (connected ? 'badge-connected' : 'badge-disconnected')}`} style={{ backdropFilter: 'blur(10px)' }}>
             <span className={`badge-dot ${(connectionMode === 'srt' ? srtRunning : connected) ? 'blink' : ''}`}></span>
             {connectionMode === 'srt' ? (srtReconnecting ? 'SRT RETRY' : (srtRunning ? 'SRT LIVE' : 'SRT READY')) : (connected ? 'ONLINE' : 'OFFLINE')}
             <span style={{marginLeft:'0.6rem',fontSize:'0.72rem',fontWeight:700,color:batteryLevel !== null && batteryLevel <= 15 ? '#ff6b6b' : 'inherit'}}>{batteryIcon} {batteryLevel === null ? '--' : batteryLevel + '%'}{batteryCharging ? ' CHG' : ''}</span>
+          </div>
+          <div style={{position:'absolute',top:'3.65rem',right:'1rem',display:'flex',gap:'0.45rem',alignItems:'center',padding:'0.35rem 0.55rem',borderRadius:'10px',background:'rgba(0,0,0,0.52)',backdropFilter:'blur(8px)',fontSize:'0.68rem',fontFamily:'monospace',color:'rgba(255,255,255,0.82)'}}>
+            <span>📶 {networkType}</span>
+            {networkQuality && <span>↓ {networkQuality}</span>}
+            <span>• {Math.round(Number(srtBitrate)/1000000)} Mbps</span>
           </div>
         </div>
 
@@ -1213,6 +1236,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           <div style={{ display: 'flex', gap: '1rem', background: 'rgba(0, 0, 0, 0.6)', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div>CAM: {activeCamera === 'screen' ? 'LAYAR' : (activeCamera === 'environment' ? 'BELAKANG' : 'DEPAN')}</div>
             <div>RES: {activeResolution}</div>
+            <div>FPS: {activeFps}</div>
+            <div>NET: {networkType}</div>
           </div>
 
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
