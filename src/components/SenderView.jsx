@@ -379,6 +379,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
       return;
     }
     setSrtTestState('MENGETES...');
+    setSrtHealth('CHECKING');
+    setSrtLastCheck(Date.now());
     setSrtError(null);
     try {
       const result = await KdrSrt.start({
@@ -394,6 +396,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
       });
       const ok = Boolean(result?.running);
       setSrtTestState(ok ? 'SRT SIAP' : 'GAGAL');
+      setSrtHealth(ok ? 'READY' : 'ERROR');
+      setSrtLastCheck(Date.now());
       if (ok) {
         await new Promise(r => setTimeout(r, 1800));
         try { await KdrSrt.stop(); } catch (_) {}
@@ -403,6 +407,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
       }
     } catch (err) {
       setSrtTestState('GAGAL');
+      setSrtHealth('ERROR');
+      setSrtLastCheck(Date.now());
       setSrtError(err?.message || 'Tes SRT gagal.');
     } finally {
       setTimeout(() => setSrtTestState(''), 2500);
