@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { KdrSrt } from '../native/SrtSender';
 
-export default function SenderView({ roomId, roomPin, connectionMode = 'network' }) {
+export default function SenderView({ roomId, roomPin, connectionMode = 'network', onBackToModeSelector }) {
   const [status, setStatus] = useState('Menginisialisasi...');
   const [connected, setConnected] = useState(false);
   const [activeCamera, setActiveCamera] = useState('environment'); // 'user' | 'environment'
@@ -74,6 +74,29 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   });
   const [activeSrtProfile, setActiveSrtProfile] = useState(() => localStorage.getItem('kdr_srt_active_profile') || '');
   const [newSrtProfileName, setNewSrtProfileName] = useState('');
+
+  // Android/WebView back: close the current sheet first, then return to
+  // the transport selector instead of allowing the app to exit.
+  useEffect(() => {
+    if (!onBackToModeSelector) return undefined;
+    const historyMarker = 'kdr-sender-mode';
+    window.history.pushState({ kdrSender: historyMarker }, '', window.location.href);
+    const handlePopState = () => {
+      if (showSettings) {
+        setShowSettings(false);
+        window.history.pushState({ kdrSender: historyMarker }, '', window.location.href);
+        return;
+      }
+      if (showSrtPanel) {
+        setShowSrtPanel(false);
+        window.history.pushState({ kdrSender: historyMarker }, '', window.location.href);
+        return;
+      }
+      onBackToModeSelector();
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [onBackToModeSelector, showSettings, showSrtPanel]);
 
   useEffect(() => {
     let battery = null;
