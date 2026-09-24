@@ -62,6 +62,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   });
   const [srtQrScanning, setSrtQrScanning] = useState(false);
   const [srtTestState, setSrtTestState] = useState('');
+  const [srtHealth, setSrtHealth] = useState('IDLE');
+  const [srtLastCheck, setSrtLastCheck] = useState(0);
   const [srtProfiles, setSrtProfiles] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('kdr_srt_profiles') || '[]');
@@ -470,6 +472,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         setSrtStartedAt(Number(result?.startedAt || 0));
         setSrtRuntime(result?.startedAt ? Math.max(0, Date.now() - Number(result.startedAt)) : 0);
         setSrtError(result?.error || null);
+        setSrtHealth(result?.reconnecting ? 'RECONNECTING' : result?.running ? 'HEALTHY' : 'STOPPED');
+        setSrtLastCheck(Date.now());
         if (result?.running) setStatus(result?.reconnecting ? 'SRT RECONNECTING' : 'SRT LIVE');
       } catch (_) {}
     }, 1500);
@@ -1467,6 +1471,13 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             ))}
             {zoomSupported && <span style={{fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.48)',padding:'0 0.18rem'}}>{zoomValue.toFixed(1)}×</span>}
             {focusSupported && <button type="button" onClick={() => { const modes = focusModes.length ? focusModes : ['continuous']; const idx = Math.max(0,modes.indexOf(currentFocusMode)); applyFocusMode(modes[(idx+1)%modes.length]); }} className="kdr-lens-pill kdr-tap" style={{height:'30px',padding:'0 0.62rem',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'999px',background:'rgba(255,255,255,0.08)',color:'#fff',fontSize:'0.58rem',fontWeight:800,fontFamily:'monospace'}}><span style={{marginRight:'0.25rem'}}>◎</span>{String(currentFocusMode || 'AUTO').toUpperCase()}</button>}
+          </div>
+        )}
+
+        {connectionMode === 'srt' && (
+          <div style={{position:'absolute',top:'14px',left:'50%',transform:'translateX(-50%)',zIndex:998,pointerEvents:'none',display:'flex',alignItems:'center',gap:'0.45rem',padding:'0.34rem 0.58rem',borderRadius:'999px',background:'rgba(0,0,0,0.5)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(8px)',fontFamily:'monospace',fontSize:'0.55rem',color:'rgba(255,255,255,0.78)'}}>
+            <span style={{width:7,height:7,borderRadius:'50%',background:srtHealth==='HEALTHY'?'#39e58c':srtHealth==='RECONNECTING'?'#ffd23f':'rgba(255,255,255,0.3)'}} />
+            SRT {srtHealth}
           </div>
         )}
 
