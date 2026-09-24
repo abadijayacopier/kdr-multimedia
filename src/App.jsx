@@ -11,7 +11,7 @@ const isMobileDevice = () => {
 
 export default function App() {
   const [role, setRole] = useState(null); // 'receiver' | 'sender'
-  const [senderMode, setSenderMode] = useState(null); // 'network' | 'srt'
+  const [senderMode, setSenderMode] = useState(() => { const saved = localStorage.getItem('kdr_sender_mode'); return saved === 'network' || saved === 'srt' ? saved : null; }); // 'network' | 'srt'
   const [roomId, setRoomId] = useState('');
   const [roomPin, setRoomPin] = useState('');
   const [roomsList, setRoomsList] = useState([]); // Multiple rooms for dashboard
@@ -238,15 +238,15 @@ export default function App() {
   if (role === 'sender' && !senderMode) {
     return (
       <div style={{display:'flex',minHeight:'100vh',alignItems:'center',justifyContent:'center',backgroundColor:'#08090c',color:'#fff',padding:'1.2rem',boxSizing:'border-box'}}>
-        <div className="glass-panel" style={{padding:'1.6rem',width:'100%',maxWidth:'430px',textAlign:'center'}}>
+        <div className="glass-panel" style={{padding:'1.6rem',width:'100%',maxWidth:'430px',textAlign:'center',paddingTop:'calc(1.6rem + env(safe-area-inset-top))',paddingBottom:'calc(1.6rem + env(safe-area-inset-bottom))'}}>
           <div style={{fontSize:'3rem',marginBottom:'0.7rem'}}>📹</div>
           <h2 className="gradient-text glow-text" style={{fontSize:'1.65rem',marginBottom:'0.45rem'}}>KDR Multimedia</h2>
           <p style={{color:'var(--text-secondary)',fontSize:'0.85rem',margin:'0 0 1.25rem',lineHeight:1.5}}>Pilih cara menghubungkan kamera HP ke PC/OBS.</p>
-          <button type="button" onClick={()=>setSenderMode('network')} style={{width:'100%',textAlign:'left',padding:'1rem',marginBottom:'0.8rem',borderRadius:'14px',border:'1px solid rgba(0,242,254,0.22)',background:'rgba(0,242,254,0.06)',color:'#fff',cursor:'pointer'}}>
+          <button type="button" onClick={()=>{setSenderMode('network');localStorage.setItem('kdr_sender_mode','network')}} style={{width:'100%',textAlign:'left',padding:'1rem',marginBottom:'0.8rem',borderRadius:'14px',border:'1px solid rgba(0,242,254,0.22)',background:'rgba(0,242,254,0.06)',color:'#fff',cursor:'pointer'}}>
             <div style={{fontWeight:800,fontSize:'1rem'}}>🌐 KDR Network / WebRTC</div>
             <div style={{color:'var(--text-secondary)',fontSize:'0.78rem',marginTop:'0.3rem'}}>Hubungkan melalui Room dan PIN seperti sistem lama.</div>
           </button>
-          <button type="button" onClick={()=>setSenderMode('srt')} style={{width:'100%',textAlign:'left',padding:'1rem',borderRadius:'14px',border:'1px solid rgba(0,242,254,0.45)',background:'linear-gradient(135deg,rgba(0,242,254,0.14),rgba(0,120,180,0.10))',color:'#fff',cursor:'pointer',boxShadow:'0 0 18px rgba(0,242,254,0.08)'}}>
+          <button type="button" onClick={()=>{setSenderMode('srt');localStorage.setItem('kdr_sender_mode','srt')}} style={{width:'100%',textAlign:'left',padding:'1rem',borderRadius:'14px',border:'1px solid rgba(0,242,254,0.45)',background:'linear-gradient(135deg,rgba(0,242,254,0.14),rgba(0,120,180,0.10))',color:'#fff',cursor:'pointer',boxShadow:'0 0 18px rgba(0,242,254,0.08)'}}>
             <div style={{fontWeight:800,fontSize:'1rem'}}>📡 SRT → OBS</div>
             <div style={{color:'var(--text-secondary)',fontSize:'0.78rem',marginTop:'0.3rem'}}>Streaming langsung ke OBS melalui jaringan lokal.</div>
           </button>
