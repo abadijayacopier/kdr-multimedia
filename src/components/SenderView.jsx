@@ -1483,18 +1483,18 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           )}
         </div>}
 
-        {/* Compact zoom controls — moved off the center camera area */}
+        {/* Compact zoom controls — horizontal, outside the center camera area */}
         {(zoomSupported || focusSupported) && (
-          <div style={{position:'absolute',right:'0.85rem',bottom:'8.9rem',zIndex:22,display:'flex',flexDirection:'column',alignItems:'center',gap:'0.28rem',padding:'0.3rem',borderRadius:'16px',background:'rgba(0,0,0,0.58)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',boxShadow:'0 8px 24px rgba(0,0,0,0.25)'}}>
+          <div style={{position:'absolute',right:'0.85rem',bottom:'8.9rem',zIndex:22,display:'flex',alignItems:'center',gap:'0.28rem',padding:'0.3rem',borderRadius:'16px',background:'rgba(0,0,0,0.58)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',boxShadow:'0 8px 24px rgba(0,0,0,0.25)'}}>
             {zoomSupported && (
               <>
-                <button type="button" onClick={()=>applyZoom(Math.min(zoomRange.max, zoomValue+zoomRange.step))} aria-label="Zoom in" title="Zoom in" style={{width:38,height:38,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍＋</button>
-                <div style={{minWidth:42,textAlign:'center',fontSize:'0.62rem',fontWeight:900,color:'#fff',fontFamily:'monospace'}}>{zoomValue.toFixed(1)}×</div>
-                <button type="button" onClick={()=>applyZoom(Math.max(zoomRange.min, zoomValue-zoomRange.step))} aria-label="Zoom out" title="Zoom out" style={{width:38,height:38,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍−</button>
+                <button type="button" onClick={()=>applyZoom(Math.max(zoomRange.min, zoomValue-zoomRange.step))} aria-label="Zoom out" title="Zoom out" style={{width:40,height:40,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍−</button>
+                <div style={{minWidth:44,textAlign:'center',fontSize:'0.62rem',fontWeight:900,color:'#fff',fontFamily:'monospace'}}>{zoomValue.toFixed(1)}×</div>
+                <button type="button" onClick={()=>applyZoom(Math.min(zoomRange.max, zoomValue+zoomRange.step))} aria-label="Zoom in" title="Zoom in" style={{width:40,height:40,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍＋</button>
               </>
             )}
             {focusSupported && (
-              <button type="button" onClick={() => { const modes = focusModes.length ? focusModes : ['continuous']; const idx = Math.max(0,modes.indexOf(currentFocusMode)); applyFocusMode(modes[(idx+1)%modes.length]); }} aria-label="Ganti mode fokus" title="Mode fokus" style={{width:38,height:38,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.9rem'}}>◎</button>
+              <button type="button" onClick={() => { const modes = focusModes.length ? focusModes : ['continuous']; const idx = Math.max(0,modes.indexOf(currentFocusMode)); applyFocusMode(modes[(idx+1)%modes.length]); }} aria-label="Ganti mode fokus" title="Mode fokus" style={{width:40,height:40,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.9rem'}}>◎</button>
             )}
           </div>
         )}
@@ -1549,14 +1549,6 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             {torchSupported && (
               <button type="button" onClick={()=>setFlashlight(!torchOn)} className="kdr-lens-pill kdr-tap" style={{width:'31px',height:'30px',padding:0,border:0,borderRadius:'50%',background:torchOn?'rgba(255,205,70,0.22)':'rgba(255,255,255,0.08)',color:torchOn?'#ffd45a':'rgba(255,255,255,0.72)',fontSize:'0.78rem'}} title={torchOn?'Matikan lampu':'Nyalakan lampu'}>🔦</button>
             )}
-          </div>
-        )}
-
-        {/* Professional lens HUD */}
-        {(zoomSupported || focusSupported) && !srtRunning && (
-          <div style={{position:'absolute',left:'50%',bottom:'14.9rem',transform:'translateX(-50%)',zIndex:20,display:'flex',alignItems:'center',gap:'0.35rem',padding:'0.28rem 0.35rem',borderRadius:'999px',background:'rgba(5,7,10,0.62)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(12px)',boxShadow:'0 8px 24px rgba(0,0,0,0.24)'}}>
-            {zoomSupported && <span style={{fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.48)',padding:'0 0.18rem'}}>ZOOM {zoomValue.toFixed(1)}×</span>}
-            {focusSupported && <button type="button" onClick={() => { const modes = focusModes.length ? focusModes : ['continuous']; const idx = Math.max(0,modes.indexOf(currentFocusMode)); applyFocusMode(modes[(idx+1)%modes.length]); }} className="kdr-lens-pill kdr-tap" style={{height:'30px',padding:'0 0.62rem',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'999px',background:'rgba(255,255,255,0.08)',color:'#fff',fontSize:'0.58rem',fontWeight:800,fontFamily:'monospace'}}><span style={{marginRight:'0.25rem'}}>◎</span>{({continuous:'AF-C',single:'AF-S',manual:'MF'}[currentFocusMode] || String(currentFocusMode || 'AUTO').toUpperCase())}</button>}
           </div>
         )}
 
@@ -1713,14 +1705,6 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             </div>
           </div>
         )}
-        {connectionMode === 'srt' && !nativeSrtAvailable && (
-          <div style={{position:'absolute',bottom:'10.9rem',left:'50%',transform:'translateX(-50%)',zIndex:18,pointerEvents:'none'}}>
-            <div style={{padding:'0.38rem 0.7rem',borderRadius:'999px',background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(10px)',fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.72)',whiteSpace:'nowrap'}}>
-              SRT NATIVE • ANDROID
-            </div>
-          </div>
-        )}
-
         {/* Bottom controls */}
         <div className="mobile-footer">
           {/* Active stats */}
