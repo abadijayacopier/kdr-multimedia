@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { KdrSrt } from '../native/SrtSender';
 
 export default function SenderView({ roomId, roomPin, connectionMode = 'network', onBackToModeSelector }) {
@@ -78,6 +79,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const showSettingsRef = useRef(false);
   const showSrtPanelRef = useRef(false);
   const controlsTimerRef = useRef(null);
+  const nativeSrtAvailable = Capacitor.getPlatform() === 'android';
 
   const revealCameraControls = () => {
     setShowCameraControls(true);
@@ -427,6 +429,14 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   };
 
   const testSrtConnection = async () => {
+    if (!nativeSrtAvailable) {
+      setSrtTestState('ANDROID SAJA');
+      setSrtHealth('ERROR');
+      setSrtLastCheck(Date.now());
+      setSrtError('SRT native hanya tersedia di aplikasi KDR Camera Android. Browser/iPhone tidak menjalankan native SRT.');
+      setTimeout(() => setSrtTestState(''), 2500);
+      return;
+    }
     const endpoint = srtEndpoint.trim();
     if (!/^srt:\/\/[^\s:]+:\d{1,5}$/i.test(endpoint)) {
       setSrtTestState('FORMAT SALAH');
@@ -471,6 +481,13 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   };
 
   const startNativeSrt = async () => {
+    if (!nativeSrtAvailable) {
+      setSrtRunning(false);
+      setSrtError('SRT native hanya tersedia di aplikasi KDR Camera Android. Browser/iPhone tetap untuk preview/WebRTC.');
+      setStatus('SRT native tersedia di KDR Camera Android');
+      setShowSrtPanel(true);
+      return;
+    }
     const endpoint = srtEndpoint.trim();
     if (!/^srt:\/\//i.test(endpoint)) {
       setSrtError('Endpoint harus diawali srt://');
@@ -1367,12 +1384,12 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         </div>
 
         {/* Native SRT controls */}
-        <div style={{ position: 'absolute', top: '5.05rem', left: '0.8rem', right: '0.8rem', zIndex: 20 }}>
-          <button onClick={() => setShowSrtPanel(v => !v)} style={{ width: '100%', minHeight: '42px', padding: '0.55rem 0.8rem', borderRadius: '14px', border: srtRunning ? '1px solid rgba(255,70,70,0.45)' : '1px solid rgba(0,242,254,0.25)', background: srtRunning ? 'rgba(90,12,16,0.72)' : 'rgba(0,0,0,0.58)', color: '#fff', backdropFilter: 'blur(14px)', boxShadow: '0 8px 24px rgba(0,0,0,0.22)', fontWeight: 800, letterSpacing: '0.02em' }}>
-            {srtRunning ? (srtReconnecting ? '🟠 SRT RECONNECTING' : '🔴 SRT LIVE') : '📡 SRT STREAM'} {showSrtPanel ? '▲' : '▼'}
+        <div style={{ position: 'absolute', top: '0.85rem', right: '0.85rem', zIndex: 31 }}>
+          <button type="button" onClick={() => setShowSrtPanel(v => !v)} aria-label="Buka pengaturan SRT" style={{ minWidth:'44px', height:'38px', padding:'0 0.7rem', borderRadius:'12px', border: srtRunning ? '1px solid rgba(255,70,70,0.45)' : '1px solid rgba(0,242,254,0.25)', background: srtRunning ? 'rgba(90,12,16,0.72)' : 'rgba(0,0,0,0.58)', color:'#fff', backdropFilter:'blur(14px)', boxShadow:'0 6px 18px rgba(0,0,0,0.2)', fontWeight:800, fontSize:'0.68rem', letterSpacing:'0.02em' }}>
+            {srtRunning ? (srtReconnecting ? '🟠 SRT RETRY' : '🔴 SRT LIVE') : '📡 SRT'}
           </button>
           {showSrtPanel && (
-            <div className="glass-panel kdr-settings-sheet" style={{ position:'absolute', top:'3.15rem', left:0, right:0, maxHeight:'min(62vh, 560px)', overflowY:'auto', marginTop:0, padding:'1rem', borderRadius:'20px', background:'rgba(7,9,13,0.97)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 20px 60px rgba(0,0,0,0.55)', backdropFilter:'blur(22px)' }}>
+            <div className="glass-panel kdr-settings-sheet" style={{ position:'fixed', left:'0.7rem', right:'0.7rem', bottom:'0.7rem', top:'auto', maxHeight:'min(68vh, 620px)', overflowY:'auto', marginTop:0, padding:'1rem', borderRadius:'20px', background:'rgba(7,9,13,0.98)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 20px 60px rgba(0,0,0,0.55)', backdropFilter:'blur(22px)' }}>
               <div style={{ display: 'grid', gap: '0.65rem' }}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingBottom:'0.15rem'}}>
                   <div><div style={{fontSize:'0.82rem',fontWeight:900,color:'#fff'}}>📡 SRT OUTPUT</div><div style={{fontSize:'0.62rem',color:'rgba(255,255,255,0.48)',marginTop:'0.12rem'}}>Koneksi kamera → OBS • pengaturan tersimpan</div></div>
@@ -1684,7 +1701,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         )}
 
         {/* Primary LIVE control */}
-        {connectionMode === 'srt' && (
+        {connectionMode === 'srt' && nativeSrtAvailable && (
           <div style={{position:'absolute',bottom:'11.9rem',left:'50%',transform:'translateX(-50%)',zIndex:20}}>
             <button type="button" onClick={srtRunning ? stopNativeSrt : startNativeSrt} disabled={srtReconnecting}
               style={{minWidth:'150px',height:'48px',padding:'0 1.1rem',borderRadius:'24px',border:'2px solid rgba(255,255,255,0.22)',background:srtRunning ? 'rgba(190,35,35,0.92)' : 'rgba(18,18,22,0.88)',color:'#fff',fontWeight:900,fontSize:'0.86rem',letterSpacing:'0.04em',boxShadow:srtRunning ? '0 0 22px rgba(255,60,60,0.32)' : '0 8px 24px rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',opacity:srtReconnecting?0.65:1}}>
@@ -1698,6 +1715,13 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
                 {srtRunning ? ('SRT • ' + Math.round(Number(srtBitrate)/1000000) + ' Mbps') : 'SRT → OBS'}
               </span>
               {srtRunning && <span style={{padding:'0.18rem 0.42rem',borderRadius:'999px',background:'rgba(0,0,0,0.46)',border:'1px solid rgba(255,255,255,0.08)'}}>{formatSrtDuration(srtRuntime)}</span>}
+            </div>
+          </div>
+        )}
+        {connectionMode === 'srt' && !nativeSrtAvailable && (
+          <div style={{position:'absolute',bottom:'10.9rem',left:'50%',transform:'translateX(-50%)',zIndex:18,pointerEvents:'none'}}>
+            <div style={{padding:'0.38rem 0.7rem',borderRadius:'999px',background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(10px)',fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.72)',whiteSpace:'nowrap'}}>
+              SRT NATIVE • ANDROID
             </div>
           </div>
         )}
