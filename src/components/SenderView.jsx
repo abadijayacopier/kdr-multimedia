@@ -45,6 +45,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const [srtRuntime, setSrtRuntime] = useState(0);
   const [showSrtPanel, setShowSrtPanel] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCameraControls, setShowCameraControls] = useState(true);
   const [srtEndpoint, setSrtEndpoint] = useState(() => localStorage.getItem('kdr_srt_endpoint') || 'srt://192.168.1.100:9000');
   const [srtStreamId, setSrtStreamId] = useState(() => localStorage.getItem('kdr_srt_stream_id') || `kdr-${roomId}`);
   const [srtLatency, setSrtLatency] = useState(() => Number(localStorage.getItem('kdr_srt_latency') || 120));
@@ -76,6 +77,27 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const [newSrtProfileName, setNewSrtProfileName] = useState('');
   const showSettingsRef = useRef(false);
   const showSrtPanelRef = useRef(false);
+  const controlsTimerRef = useRef(null);
+
+  const revealCameraControls = () => {
+    setShowCameraControls(true);
+    if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    if (!showSettingsRef.current && !showSrtPanelRef.current) {
+      controlsTimerRef.current = setTimeout(() => setShowCameraControls(false), 4000);
+    }
+  };
+
+  useEffect(() => {
+    if (showSettings || showSrtPanel) {
+      setShowCameraControls(true);
+      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+      return undefined;
+    }
+    revealCameraControls();
+    return () => {
+      if (controlsTimerRef.current) clearTimeout(controlsTimerRef.current);
+    };
+  }, [showSettings, showSrtPanel]);
 
   // Android/WebView back: close the current sheet first, then return to
   // the transport selector instead of allowing the app to exit.
@@ -1261,7 +1283,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   }
 
   return (
-    <div className="mobile-view" style={isTallyActive ? { border: '6px solid red', boxSizing: 'border-box' } : {}}>
+    <div className="mobile-view" onPointerDown={revealCameraControls} onTouchStart={revealCameraControls} style={isTallyActive ? { border: '6px solid red', boxSizing: 'border-box' } : {}}>
       {onBackToModeSelector && (
         <button
           type="button"
@@ -1594,6 +1616,26 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           .kdr-settings-sheet { animation:kdrSheetIn .18s ease-out; }
           .kdr-tap { transition:transform .12s ease, opacity .12s ease; }
           .kdr-tap:active { transform:scale(.96); opacity:.88; }
+          .kdr-camera-controls,.kdr-camera-stats { opacity:1; transform:translateY(0); transition:opacity .22s ease, transform .22s ease; }
+          .kdr-camera-controls.kdr-controls-hidden,.kdr-camera-stats.kdr-controls-hidden { opacity:0; transform:translateY(16px); pointer-events:none; }
+          .kdr-camera-controls .mobile-btn-circle { width:48px !important; height:48px !important; min-width:48px; min-height:48px; border-width:1.5px; box-shadow:0 3px 12px rgba(0,0,0,.28); }
+          .kdr-camera-controls .mobile-btn-circle span { font-size:1.12rem !important; }
+          .kdr-camera-controls .mobile-btn-circle:nth-child(4) { width:50px !important; height:50px !important; min-width:50px; min-height:50px; }
+          .kdr-camera-controls { will-change:opacity,transform; }
+          @media (orientation: landscape) {
+            .mobile-view { min-height:100dvh; height:100dvh; }
+            .mobile-overlay { padding: max(.55rem, env(safe-area-inset-top)) max(.7rem, env(safe-area-inset-right)) max(.55rem, env(safe-area-inset-bottom)) max(.7rem, env(safe-area-inset-left)); }
+            .mobile-header { padding-top:.15rem; }
+            .mobile-footer { gap:.45rem; padding-bottom:max(.35rem, env(safe-area-inset-bottom)); }
+            .kdr-camera-controls { gap:.32rem !important; padding:.18rem .24rem !important; border-radius:17px !important; }
+            .kdr-camera-controls .mobile-btn-circle { width:42px !important; height:42px !important; min-width:42px; min-height:42px; }
+            .kdr-camera-controls .mobile-btn-circle:nth-child(4) { width:44px !important; height:44px !important; min-width:44px; min-height:44px; }
+            .kdr-camera-controls .mobile-btn-circle span { font-size:.96rem !important; }
+            .kdr-camera-stats { gap:.42rem !important; padding:.24rem .46rem !important; font-size:.52rem !important; }
+          }
+          @media (orientation: portrait) {
+            .mobile-view { min-height:100dvh; height:100dvh; }
+          }
           .kdr-camera-hud { position:absolute; inset:0; z-index:14; pointer-events:none; overflow:hidden; }
           .kdr-grid-v,.kdr-grid-h { position:absolute; background:rgba(255,255,255,0.13); }
           .kdr-grid-v { top:0; bottom:0; width:1px; }
@@ -1663,14 +1705,14 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         {/* Bottom controls */}
         <div className="mobile-footer">
           {/* Active stats */}
-          <div style={{ display: 'flex', gap: '0.72rem', alignItems:'center', background: 'rgba(0, 0, 0, 0.56)', padding: '0.42rem 0.72rem', borderRadius: '14px', fontSize: '0.64rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.82)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter:'blur(12px)', maxWidth:'calc(100vw - 1.4rem)', overflow:'hidden' }}>
+          <div className={showCameraControls ? 'kdr-camera-stats' : 'kdr-camera-stats kdr-controls-hidden'} style={{ display: 'flex', gap: '0.58rem', alignItems:'center', background: 'rgba(0, 0, 0, 0.56)', padding: '0.34rem 0.58rem', borderRadius: '12px', fontSize: '0.58rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.82)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter:'blur(12px)', maxWidth:'calc(100vw - 1.2rem)', overflow:'hidden', whiteSpace:'nowrap' }}>
             <div>CAM: {activeCamera === 'screen' ? 'LAYAR' : (activeCamera === 'environment' ? 'BELAKANG' : 'DEPAN')}</div>
             <div>RES: {activeResolution}</div>
             <div>FPS: {activeFps}</div>
             <div>NET: {networkType}</div>
           </div>
 
-          <div style={{display:'flex',gap:'0.55rem',alignItems:'center',justifyContent:'center',width:'100%',padding:'0.28rem 0.4rem',borderRadius:'22px',background:'rgba(0,0,0,0.34)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(10px)'}}>            <button type="button" onClick={()=>setShowSettings(v=>!v)} className="mobile-btn-circle kdr-tap" title="Pengaturan" style={{width:'48px',height:'48px',background:showSettings?'rgba(0,242,254,0.2)':'rgba(255,255,255,0.12)'}}><span style={{fontSize:'1.2rem'}}>⚙️</span></button>
+          <div className={showCameraControls ? 'kdr-camera-controls' : 'kdr-camera-controls kdr-controls-hidden'} onPointerDown={(event)=>event.stopPropagation()} style={{display:'flex',gap:'0.45rem',alignItems:'center',justifyContent:'center',width:'auto',maxWidth:'calc(100vw - 1.2rem)',padding:'0.24rem 0.34rem',borderRadius:'20px',background:'rgba(0,0,0,0.38)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(12px)'}}>            <button type="button" onClick={()=>setShowSettings(v=>!v)} className="mobile-btn-circle kdr-tap" title="Pengaturan" style={{width:'48px',height:'48px',background:showSettings?'rgba(0,242,254,0.2)':'rgba(255,255,255,0.12)'}}><span style={{fontSize:'1.2rem'}}>⚙️</span></button>
             <button
               onClick={() => {
                 const nextAudio = !isAudioEnabled;
@@ -1724,7 +1766,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             <button
               onClick={toggleCameraLocal}
               className="mobile-btn-circle kdr-tap"
-              style={{ width: '58px', height: '58px', background: 'rgba(255, 255, 255, 0.18)', boxShadow:'0 4px 16px rgba(0,0,0,0.22)' }}
+              style={{ width: '50px', height: '50px', background: 'rgba(255, 255, 255, 0.18)', boxShadow:'0 4px 16px rgba(0,0,0,0.22)' }}
               title="Flip Camera"
             >
               <span style={{ fontSize: '1.45rem' }}>🔄</span>
