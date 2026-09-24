@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { KdrSrt } from '../native/SrtSender';
 
-export default function SenderView({ roomId, roomPin }) {
+export default function SenderView({ roomId, roomPin, connectionMode = 'network' }) {
   const [status, setStatus] = useState('Menginisialisasi...');
   const [connected, setConnected] = useState(false);
   const [activeCamera, setActiveCamera] = useState('environment'); // 'user' | 'environment'
@@ -35,6 +35,10 @@ export default function SenderView({ roomId, roomPin }) {
   const [srtLatency, setSrtLatency] = useState(() => Number(localStorage.getItem('kdr_srt_latency') || 120));
   const [srtBitrate, setSrtBitrate] = useState(() => Number(localStorage.getItem('kdr_srt_bitrate') || 4000000));
   const [srtPassphrase, setSrtPassphrase] = useState(() => localStorage.getItem('kdr_srt_passphrase') || '');
+  const [srtHost, setSrtHost] = useState(() => localStorage.getItem('kdr_srt_host') || '');
+  const [srtPort, setSrtPort] = useState(() => localStorage.getItem('kdr_srt_port') || '9000');
+  const [srtQrScanning, setSrtQrScanning] = useState(false);
+  const [srtTestState, setSrtTestState] = useState('');
   const [srtProfiles, setSrtProfiles] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('kdr_srt_profiles') || '[]');
@@ -117,6 +121,115 @@ export default function SenderView({ roomId, roomPin }) {
     if (activeSrtProfile === name) {
       setActiveSrtProfile('');
       localStorage.removeItem('kdr_srt_active_profile');
+    }
+  };
+
+  const buildSrtEndpoint = (host, port) => {
+    const cleanHost = String(host || '').trim().replace(/^srt:\/\//i, '').replace(/\/.*$/, '');
+    const cleanPort = String(port || '9000').trim();
+    if (!cleanHost || !/^\d{1,5}$/.test(cleanPort)) return '';
+    return `srt://${cleanHost}:${cleanPort}`;
+  };
+
+  const applySrtEndpoint = (host, port) => {
+    const endpoint = buildSrtEndpoint(host, port);
+    if (!endpoint) return false;
+    setSrtHost(host);
+    setSrtPort(String(port));
+    setSrtEndpoint(endpoint);
+    localStorage.setItem('kdr_srt_host', host);
+    localStorage.setItem('kdr_srt_port', String(port));
+    localStorage.setItem('kdr_srt_endpoint', endpoint);
+    return true;
+  };
+
+  const parseSrtQr = (raw) => {
+    const value = String(raw || '').trim();
+    try {
+      const parsed = JSON.parse(value);
+      const host = parsed.host || parsed.ip || parsed.pcIp;
+      const port = parsed.port || 9000;
+      if (host && applySrtEndpoint(host, port)) return true;
+    } catch (_) {}
+    try {
+      const url = new URL(value);
+      if (url.protocol === 'srt:' || url.protocol === 'kdr-srt:') {
+        const host = url.hostname;
+        const port = url.port || '9000';
+        if (host && applySrtEndpoint(host, port)) return true;
+      }
+    } catch (_) {}
+    const match = value.match(/(?:srt:\/\/)?([\w.-]+)(?::(\d{1,5}))?/i);
+    if (match && applySrtEndpoint(match[1], match[2] || '9000')) return true;
+    return false;
+  };
+
+  const scanSrtQr = async () => {
+    if (!('BarcodeDetector' in window)) {
+      setSrtError('Scanner QR belum tersedia di perangkat/browser ini. Masukkan IP PC secara manual.');
+      return;
+    }
+    setSrtQrScanning(true);
+    setSrtError(null);
+    try {
+      const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+      const started = Date.now();
+      while (Date.now() - started < 20000) {
+        if (!localVideoRef.current || localVideoRef.current.readyState < 2) {
+          await new Promise(r => setTimeout(r, 250));
+          continue;
+        }
+        const codes = await detector.detect(localVideoRef.current);
+        if (codes?.length) {
+          if (!parseSrtQr(codes[0].rawValue)) throw new Error('QR bukan konfigurasi KDR SRT yang valid.');
+          setSrtQrScanning(false);
+          setSrtError(null);
+          return;
+        }
+        await new Promise(r => setTimeout(r, 250));
+      }
+      throw new Error('QR tidak terdeteksi dalam 20 detik.');
+    } catch (err) {
+      setSrtQrScanning(false);
+      setSrtError(err?.message || 'Gagal membaca QR OBS.');
+    }
+  };
+
+  const testSrtConnection = async () => {
+    const endpoint = srtEndpoint.trim();
+    if (!/^srt:\/\/[^\s:]+:\d{1,5}$/i.test(endpoint)) {
+      setSrtTestState('FORMAT SALAH');
+      setSrtError('Isi IP PC dan port SRT terlebih dahulu.');
+      return;
+    }
+    setSrtTestState('MENGETES...');
+    setSrtError(null);
+    try {
+      const result = await KdrSrt.start({
+        endpoint,
+        streamId: srtStreamId.trim() || 'kdr-' + roomId,
+        passphrase: srtPassphrase.trim() || undefined,
+        latencyMs: Number(srtLatency),
+        width: srtDimensions.width,
+        height: srtDimensions.height,
+        fps: Number(activeFps),
+        bitrate: Number(srtBitrate),
+        audio: Boolean(isAudioEnabled)
+      });
+      const ok = Boolean(result?.running);
+      setSrtTestState(ok ? 'SRT SIAP' : 'GAGAL');
+      if (ok) {
+        await new Promise(r => setTimeout(r, 1800));
+        try { await KdrSrt.stop(); } catch (_) {}
+        setStatus('Tes SRT selesai. Kamera siap.');
+      } else {
+        setSrtError(result?.error || 'Native SRT tidak berhasil dimulai.');
+      }
+    } catch (err) {
+      setSrtTestState('GAGAL');
+      setSrtError(err?.message || 'Tes SRT gagal.');
+    } finally {
+      setTimeout(() => setSrtTestState(''), 2500);
     }
   };
 
@@ -393,8 +506,16 @@ export default function SenderView({ roomId, roomPin }) {
 
     };
 
-    // Initialize local camera immediately to show preview
+    // SRT mode does not use the legacy Room/WebRTC connection.
     setupCamera(activeCamera, activeResolution);
+    if (connectionMode === 'srt') {
+      return () => {
+        disposed = true;
+        stopAllMedia();
+        if (pcRef.current) pcRef.current.close();
+      };
+    }
+
     connect();
 
     return () => {
@@ -404,7 +525,7 @@ export default function SenderView({ roomId, roomPin }) {
       if (wsRef.current) wsRef.current.close();
       if (pcRef.current) pcRef.current.close();
     };
-  }, [roomId]);
+  }, [roomId, connectionMode]);
 
   // Clean up media tracks
   const stopAllMedia = () => {
@@ -919,7 +1040,7 @@ export default function SenderView({ roomId, roomPin }) {
               📹 KDR Multimedia Sender
             </span>
             <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-              Room: {roomId}
+              {connectionMode === 'srt' ? 'SRT → OBS' : `Room: ${roomId}`}
             </span>
           </div>
           <div className={`badge ${connected ? 'badge-connected' : 'badge-disconnected'}`} style={{ backdropFilter: 'blur(10px)' }}>
@@ -958,7 +1079,14 @@ export default function SenderView({ roomId, roomPin }) {
                     >🗑️</button>
                   )}
                 </div>
-                <input className="control-input" value={srtEndpoint} onChange={e => setSrtEndpoint(e.target.value)} placeholder="srt://192.168.1.100:9000" disabled={srtRunning} />
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 100px', gap:'0.45rem' }}>
+                  <input className="control-input" value={srtHost} onChange={e => { setSrtHost(e.target.value); applySrtEndpoint(e.target.value, srtPort); }} placeholder="IP PC / Host OBS" disabled={srtRunning} />
+                  <input className="control-input" value={srtPort} onChange={e => { setSrtPort(e.target.value); applySrtEndpoint(srtHost, e.target.value); }} inputMode="numeric" placeholder="9000" disabled={srtRunning} />
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'0.45rem' }}>
+                  <div style={{ fontSize:'0.72rem', color:'var(--text-secondary)', alignSelf:'center' }}>{srtEndpoint || 'srt://IP-PC:9000'}</div>
+                  <button type="button" onClick={scanSrtQr} disabled={srtRunning || srtQrScanning} style={{ borderRadius:'10px', border:'1px solid rgba(0,242,254,0.35)', background:'rgba(0,242,254,0.10)', color:'#fff', padding:'0.55rem 0.7rem', fontWeight:700 }}>{srtQrScanning ? '📷 MENCARI QR...' : '📷 SCAN QR OBS'}</button>
+                </div>
                 <input className="control-input" value={srtStreamId} onChange={e => setSrtStreamId(e.target.value)} placeholder="Stream ID" disabled={srtRunning} />
                 <input className="control-input" type="password" value={srtPassphrase} onChange={e => setSrtPassphrase(e.target.value)} placeholder="Passphrase (opsional)" disabled={srtRunning} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem' }}>
@@ -992,7 +1120,14 @@ export default function SenderView({ roomId, roomPin }) {
                   </div>
                 )}
                 {srtError && <div style={{ color: 'var(--accent-red)', fontSize: '0.75rem' }}>⚠️ {srtError}</div>}
-                {!srtRunning ? <button className="btn btn-primary" onClick={startNativeSrt}>🔴 MULAI SRT</button> : <button className="btn btn-danger" onClick={stopNativeSrt}>⏹ STOP SRT</button>}
+                {!srtRunning && (
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1.2fr',gap:'0.45rem'}}>
+                    <button className="btn btn-secondary" onClick={testSrtConnection}>🔎 TES KONEKSI</button>
+                    <button className="btn btn-primary" onClick={startNativeSrt}>🔴 MULAI SRT</button>
+                  </div>
+                )}
+                {srtRunning && <button className="btn btn-danger" onClick={stopNativeSrt}>⏹ STOP SRT</button>}
+                {srtTestState && <div style={{fontSize:'0.72rem',color:srtTestState==='SRT SIAP'?'var(--accent-green)':'var(--accent-cyan)',fontWeight:700}}>● {srtTestState}</div>}
               </div>
             </div>
           )}
