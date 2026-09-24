@@ -1248,6 +1248,23 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           </div>
         </div>
 
+        {/* Live / Tally status strip */}
+        <div style={{position:'absolute',top:'5.9rem',left:'1rem',right:'1rem',zIndex:19,display:'flex',justifyContent:'space-between',alignItems:'center',pointerEvents:'none'}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:'0.45rem',padding:'0.32rem 0.58rem',borderRadius:'10px',background:'rgba(0,0,0,0.52)',backdropFilter:'blur(8px)',fontSize:'0.66rem',fontWeight:800,color:'#fff',letterSpacing:'0.04em'}}>
+            <span style={{width:8,height:8,borderRadius:'50%',background:srtRunning?'#ff3b3b':'rgba(255,255,255,0.35)',boxShadow:srtRunning?'0 0 12px #ff3b3b':'none',animation:srtRunning?'kdrPulse 1.2s infinite':'none'}} />
+            {srtRunning ? (srtReconnecting ? 'RECONNECTING' : 'LIVE') : 'STANDBY'}
+          </div>
+          {srtError && (
+            <div style={{maxWidth:'62%',padding:'0.32rem 0.58rem',borderRadius:'10px',background:'rgba(120,0,0,0.72)',fontSize:'0.62rem',fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+              ⚠ {srtError}
+            </div>
+          )}
+        </div>
+
+        <style>{`
+          @keyframes kdrPulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.45; transform:scale(.82); } }
+        `}</style>
+
         {/* Primary LIVE control */}
         {connectionMode === 'srt' && (
           <div style={{position:'absolute',bottom:'11.9rem',left:'50%',transform:'translateX(-50%)',zIndex:20}}>
