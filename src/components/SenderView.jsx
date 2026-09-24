@@ -35,8 +35,16 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const [srtLatency, setSrtLatency] = useState(() => Number(localStorage.getItem('kdr_srt_latency') || 120));
   const [srtBitrate, setSrtBitrate] = useState(() => Number(localStorage.getItem('kdr_srt_bitrate') || 4000000));
   const [srtPassphrase, setSrtPassphrase] = useState(() => localStorage.getItem('kdr_srt_passphrase') || '');
-  const [srtHost, setSrtHost] = useState(() => localStorage.getItem('kdr_srt_host') || '');
-  const [srtPort, setSrtPort] = useState(() => localStorage.getItem('kdr_srt_port') || '9000');
+  const [srtHost, setSrtHost] = useState(() => {
+    const endpoint = localStorage.getItem('kdr_srt_endpoint') || '';
+    const match = endpoint.match(/^srt:\/\/([^:/?]+)(?::\d+)?/i);
+    return localStorage.getItem('kdr_srt_host') || match?.[1] || '';
+  });
+  const [srtPort, setSrtPort] = useState(() => {
+    const endpoint = localStorage.getItem('kdr_srt_endpoint') || '';
+    const match = endpoint.match(/^srt:\/\/[^:]+:(\d+)/i);
+    return localStorage.getItem('kdr_srt_port') || match?.[1] || '9000';
+  });
   const [srtQrScanning, setSrtQrScanning] = useState(false);
   const [srtTestState, setSrtTestState] = useState('');
   const [srtProfiles, setSrtProfiles] = useState(() => {
