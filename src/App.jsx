@@ -11,6 +11,7 @@ const isMobileDevice = () => {
 
 export default function App() {
   const [role, setRole] = useState(null); // 'receiver' | 'sender'
+  const [senderMode, setSenderMode] = useState(null); // 'network' | 'srt'
   const [roomId, setRoomId] = useState('');
   const [roomPin, setRoomPin] = useState('');
   const [roomsList, setRoomsList] = useState([]); // Multiple rooms for dashboard
@@ -50,6 +51,9 @@ export default function App() {
     // Determine Role & Room ID
     if (urlRole === 'sender' || isMobile) {
       setRole('sender');
+      const urlMode = params.get('mode');
+      if (urlMode === 'srt') setSenderMode('srt');
+      else if (urlMode === 'network') setSenderMode('network');
       if (urlRoom) {
         setRoomId(urlRoom.toUpperCase());
       }
@@ -230,106 +234,56 @@ export default function App() {
     );
   }
 
-  // If role is sender (mobile) but we don't have a roomId, show room entry form
-  if (role === 'sender' && !roomId) {
+  // Mobile sender: choose the transport before opening the camera.
+  if (role === 'sender' && !senderMode) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        minHeight: '100vh', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        backgroundColor: '#08090c', 
-        color: '#fff',
-        padding: '1.5rem',
-        boxSizing: 'border-box'
-      }}>
-        <div className="glass-panel" style={{ padding: '2rem', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📹</div>
-          <h2 className="gradient-text glow-text" style={{ fontSize: '1.6rem', marginBottom: '0.5rem' }}>KDR Multimedia</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '2rem' }}>
-            Hubungkan kamera HP Anda ke PC. Masukkan kode room yang tertera pada layar PC Anda.
-          </p>
+      <div style={{display:'flex',minHeight:'100vh',alignItems:'center',justifyContent:'center',backgroundColor:'#08090c',color:'#fff',padding:'1.2rem',boxSizing:'border-box'}}>
+        <div className="glass-panel" style={{padding:'1.6rem',width:'100%',maxWidth:'430px',textAlign:'center'}}>
+          <div style={{fontSize:'3rem',marginBottom:'0.7rem'}}>📹</div>
+          <h2 className="gradient-text glow-text" style={{fontSize:'1.65rem',marginBottom:'0.45rem'}}>KDR Multimedia</h2>
+          <p style={{color:'var(--text-secondary)',fontSize:'0.85rem',margin:'0 0 1.25rem',lineHeight:1.5}}>Pilih cara menghubungkan kamera HP ke PC/OBS.</p>
+          <button type="button" onClick={()=>setSenderMode('network')} style={{width:'100%',textAlign:'left',padding:'1rem',marginBottom:'0.8rem',borderRadius:'14px',border:'1px solid rgba(0,242,254,0.22)',background:'rgba(0,242,254,0.06)',color:'#fff',cursor:'pointer'}}>
+            <div style={{fontWeight:800,fontSize:'1rem'}}>🌐 KDR Network / WebRTC</div>
+            <div style={{color:'var(--text-secondary)',fontSize:'0.78rem',marginTop:'0.3rem'}}>Hubungkan melalui Room dan PIN seperti sistem lama.</div>
+          </button>
+          <button type="button" onClick={()=>setSenderMode('srt')} style={{width:'100%',textAlign:'left',padding:'1rem',borderRadius:'14px',border:'1px solid rgba(0,242,254,0.45)',background:'linear-gradient(135deg,rgba(0,242,254,0.14),rgba(0,120,180,0.10))',color:'#fff',cursor:'pointer',boxShadow:'0 0 18px rgba(0,242,254,0.08)'}}>
+            <div style={{fontWeight:800,fontSize:'1rem'}}>📡 SRT → OBS</div>
+            <div style={{color:'var(--text-secondary)',fontSize:'0.78rem',marginTop:'0.3rem'}}>Streaming langsung ke OBS melalui jaringan lokal.</div>
+          </button>
+          <div style={{marginTop:'1.5rem',fontSize:'0.7rem',color:'var(--text-muted)',textTransform:'uppercase'}}>Dev: supriyanto abadi jaya</div>
+        </div>
+      </div>
+    );
+  }
 
-          <form onSubmit={handleJoinMobile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
-              <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Kode Room PC</label>
-              <input
-                type="text"
-                maxLength="8"
-                placeholder="CONTOH: 3UETN9"
-                value={inputRoomId}
-                onChange={(e) => setInputRoomId(e.target.value.toUpperCase())}
-                style={{
-                  background: 'rgba(0, 0, 0, 0.4)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
-                  padding: '1rem',
-                  fontSize: '1.3rem',
-                  color: 'var(--accent-cyan)',
-                  textAlign: 'center',
-                  fontFamily: 'monospace',
-                  letterSpacing: '4px',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--accent-cyan)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-              />
+  // Legacy KDR Network / WebRTC pairing.
+  if (role === 'sender' && senderMode === 'network' && !roomId) {
+    return (
+      <div style={{display:'flex',minHeight:'100vh',alignItems:'center',justifyContent:'center',backgroundColor:'#08090c',color:'#fff',padding:'1.5rem',boxSizing:'border-box'}}>
+        <div className="glass-panel" style={{padding:'2rem',width:'100%',maxWidth:'400px',textAlign:'center'}}>
+          <div style={{fontSize:'3rem',marginBottom:'1rem'}}>📹</div>
+          <h2 className="gradient-text glow-text" style={{fontSize:'1.6rem',marginBottom:'0.5rem'}}>KDR Multimedia</h2>
+          <p style={{color:'var(--text-secondary)',fontSize:'0.85rem',marginBottom:'2rem'}}>Hubungkan kamera HP Anda ke PC. Masukkan kode room yang tertera pada layar PC Anda.</p>
+          <form onSubmit={handleJoinMobile} style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
+            <div style={{display:'flex',flexDirection:'column',gap:'0.5rem',textAlign:'left'}}>
+              <label style={{fontSize:'0.75rem',color:'var(--text-secondary)',textTransform:'uppercase',fontWeight:600}}>Kode Room PC</label>
+              <input type="text" maxLength="8" placeholder="CONTOH: 3UETN9" value={inputRoomId} onChange={e=>setInputRoomId(e.target.value.toUpperCase())} style={{background:'rgba(0,0,0,0.4)',border:'1px solid var(--border-color)',borderRadius:'12px',padding:'1rem',fontSize:'1.3rem',color:'var(--accent-cyan)',textAlign:'center',fontFamily:'monospace',letterSpacing:'4px',outline:'none'}} />
             </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
-              <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>PIN (4 Digit)</label>
-              <input
-                type="text"
-                maxLength="4"
-                placeholder="1234"
-                value={inputPin}
-                onChange={(e) => setInputPin(e.target.value.replace(/[^0-9]/g, ''))}
-                style={{
-                  background: 'rgba(0, 0, 0, 0.4)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
-                  padding: '1rem',
-                  fontSize: '1.3rem',
-                  color: 'var(--accent-cyan)',
-                  textAlign: 'center',
-                  fontFamily: 'monospace',
-                  letterSpacing: '8px',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--accent-cyan)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-              />
+            <div style={{display:'flex',flexDirection:'column',gap:'0.5rem',textAlign:'left'}}>
+              <label style={{fontSize:'0.75rem',color:'var(--text-secondary)',textTransform:'uppercase',fontWeight:600}}>PIN (4 Digit)</label>
+              <input type="text" maxLength="4" placeholder="1234" value={inputPin} onChange={e=>setInputPin(e.target.value.replace(/[^0-9]/g,''))} style={{background:'rgba(0,0,0,0.4)',border:'1px solid var(--border-color)',borderRadius:'12px',padding:'1rem',fontSize:'1.3rem',color:'var(--accent-cyan)',textAlign:'center',fontFamily:'monospace',letterSpacing:'8px',outline:'none'}} />
             </div>
-
-            <button
-              type="submit"
-              disabled={inputRoomId.trim().length < 3 || inputPin.trim().length < 4}
-              className="btn btn-primary"
-              style={{
-                padding: '1rem',
-                fontSize: '1rem',
-                fontWeight: 600,
-                marginTop: '0.5rem',
-                opacity: (inputRoomId.trim().length < 3 || inputPin.trim().length < 4) ? 0.5 : 1,
-                cursor: (inputRoomId.trim().length < 3 || inputPin.trim().length < 4) ? 'not-allowed' : 'pointer'
-              }}
-            >
-              🚀 Hubungkan Kamera
-            </button>
+            <button type="submit" disabled={inputRoomId.trim().length<3 || inputPin.trim().length<4} className="btn btn-primary" style={{padding:'1rem',fontSize:'1rem',fontWeight:600,marginTop:'0.5rem',opacity:(inputRoomId.trim().length<3 || inputPin.trim().length<4)?0.5:1}}>🚀 Hubungkan Kamera</button>
           </form>
-
-          <div style={{ marginTop: '2rem', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Dev: supriyanto abadi jaya
-          </div>
+          <div style={{marginTop:'2rem',fontSize:'0.7rem',color:'var(--text-muted)',textTransform:'uppercase'}}>Dev: supriyanto abadi jaya</div>
         </div>
       </div>
     );
   }
 
   if (role === 'sender') {
-    return <SenderView roomId={roomId} roomPin={roomPin} />;
+    const senderRoom = senderMode === 'srt' ? (roomId || 'SRT') : roomId;
+    return <SenderView roomId={senderRoom} roomPin={roomPin} connectionMode={senderMode} />;
   }
 
   // Receiver Mode: Multi-Camera Dashboard (Grid View)
