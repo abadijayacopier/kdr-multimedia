@@ -1362,7 +1362,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
       {/* Floating UI Overlays */}
       <div className="mobile-overlay">
         {/* Top Header */}
-        <div className="mobile-header" style={{paddingLeft:'3.35rem',paddingRight:'0.85rem',boxSizing:'border-box',gap:'0.45rem'}}>
+        <div className="mobile-header kdr-top-header" style={{paddingLeft:'3.35rem',paddingRight:'0.85rem',boxSizing:'border-box',gap:'0.45rem'}}>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <span style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
               📹 KDR Multimedia
@@ -1371,12 +1371,12 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
               {connectionMode === 'srt' ? 'SRT → OBS' : `Room: ${roomId}`} • {activeResolution.toUpperCase()} • {activeFps} FPS
             </span>
           </div>
-          <div className={`badge ${connectionMode === 'srt' ? (srtRunning ? 'badge-connected' : 'badge-disconnected') : (connected ? 'badge-connected' : 'badge-disconnected')}`} style={{ backdropFilter: 'blur(10px)' }}>
+          <div className={`badge kdr-header-status ${connectionMode === 'srt' ? (srtRunning ? 'badge-connected' : 'badge-disconnected') : (connected ? 'badge-connected' : 'badge-disconnected')}`} style={{ backdropFilter: 'blur(10px)' }}>
             <span className={`badge-dot ${(connectionMode === 'srt' ? srtRunning : connected) ? 'blink' : ''}`}></span>
             {connectionMode === 'srt' ? (srtReconnecting ? 'SRT RETRY' : (srtRunning ? 'SRT LIVE' : 'SRT READY')) : (connected ? 'ONLINE' : 'OFFLINE')}
             <span style={{marginLeft:'0.6rem',fontSize:'0.72rem',fontWeight:700,color:batteryLevel !== null && batteryLevel <= 15 ? '#ff6b6b' : 'inherit'}}>{batteryIcon} {batteryLevel === null ? '--' : batteryLevel + '%'}{batteryCharging ? ' CHG' : ''}</span>
           </div>
-          <div style={{position:'absolute',top:'3.65rem',right:'1rem',display:'flex',gap:'0.45rem',alignItems:'center',padding:'0.35rem 0.55rem',borderRadius:'10px',background:'rgba(0,0,0,0.52)',backdropFilter:'blur(8px)',fontSize:'0.68rem',fontFamily:'monospace',color:'rgba(255,255,255,0.82)'}}>
+          <div className="kdr-network-pill" style={{position:'absolute',top:'3.65rem',right:'1rem',display:'flex',gap:'0.45rem',alignItems:'center',padding:'0.35rem 0.55rem',borderRadius:'10px',background:'rgba(0,0,0,0.52)',backdropFilter:'blur(8px)',fontSize:'0.68rem',fontFamily:'monospace',color:'rgba(255,255,255,0.82)'}}>
             <span>📶 {networkType}</span>
             {networkQuality && <span>↓ {networkQuality}</span>}
             <span>• {Math.round(Number(srtBitrate)/1000000)} Mbps</span>
@@ -1384,7 +1384,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         </div>
 
         {/* Native SRT controls — Android only; keep browser/iPhone camera HUD clean */}
-        {nativeSrtAvailable && <div style={{ position: 'absolute', top: '0.85rem', right: '8.1rem', zIndex: 31 }}>
+        {nativeSrtAvailable && <div className="kdr-srt-top" style={{ position: 'absolute', top: '0.85rem', right: '8.1rem', zIndex: 31 }}>
           <button type="button" onPointerDown={(e)=>e.stopPropagation()} onClick={() => setShowSrtPanel(v => !v)} aria-label="Buka pengaturan SRT" style={{ minWidth:'44px', height:'38px', padding:'0 0.7rem', borderRadius:'12px', border: srtRunning ? '1px solid rgba(255,70,70,0.45)' : '1px solid rgba(0,242,254,0.25)', background: srtRunning ? 'rgba(90,12,16,0.72)' : 'rgba(0,0,0,0.58)', color:'#fff', backdropFilter:'blur(14px)', boxShadow:'0 6px 18px rgba(0,0,0,0.2)', fontWeight:800, fontSize:'0.68rem', letterSpacing:'0.02em' }}>
             {srtRunning ? (srtReconnecting ? '🟠 SRT RETRY' : '🔴 SRT LIVE') : '📡 SRT'}
           </button>
@@ -1538,7 +1538,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
 
         {/* Professional camera control HUD */}
         {(exposureSupported || torchSupported) && !srtRunning && (
-          <div style={{position:'absolute',right:'0.85rem',bottom:'16.2rem',zIndex:20,display:'flex',alignItems:'center',gap:'0.35rem',padding:'0.28rem 0.35rem',borderRadius:'999px',background:'rgba(5,7,10,0.62)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(12px)',boxShadow:'0 8px 24px rgba(0,0,0,0.24)'}}>
+          <div className="kdr-pro-camera-hud" style={{position:'absolute',right:'0.85rem',bottom:'16.2rem',zIndex:20,display:'flex',alignItems:'center',gap:'0.35rem',padding:'0.28rem 0.35rem',borderRadius:'999px',background:'rgba(5,7,10,0.62)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(12px)',boxShadow:'0 8px 24px rgba(0,0,0,0.24)'}}>
             {exposureSupported && (
               <div style={{display:'flex',alignItems:'center',gap:'0.25rem',padding:'0 0.25rem'}}>
                 <span style={{fontSize:'0.55rem',fontFamily:'monospace',color:'rgba(255,255,255,0.5)'}}>EV</span>
@@ -1553,7 +1553,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         )}
 
         {/* Broadcast REC / timecode HUD */}
-        <div style={{position:'absolute',right:'0.85rem',bottom:'11.9rem',zIndex:24,display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.35rem'}}>
+        <div className="kdr-broadcast-hud" style={{position:'absolute',right:'0.85rem',bottom:'11.9rem',zIndex:24,display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.35rem'}}>
           <button
             type="button"
             onPointerDown={(e)=>e.stopPropagation()}
@@ -1602,7 +1602,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         </div>
 
         {/* Live / Tally status strip */}
-        <div style={{position:'absolute',top:'5.65rem',left:'0.85rem',right:'0.85rem',zIndex:19,display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'0.55rem',pointerEvents:'none'}}>
+        <div className="kdr-live-strip" style={{position:'absolute',top:'5.65rem',left:'0.85rem',right:'0.85rem',zIndex:19,display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'0.55rem',pointerEvents:'none'}}>
           <div className="kdr-live-badge" style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',padding:'0.42rem 0.7rem',borderRadius:'12px',background:srtRunning?'rgba(105,10,15,0.78)':'rgba(0,0,0,0.54)',border:srtRunning?'1px solid rgba(255,80,80,0.38)':'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(12px)',boxShadow:srtRunning?'0 8px 24px rgba(255,35,35,0.16)':'0 8px 24px rgba(0,0,0,0.18)',color:'#fff'}}>
             <span style={{width:9,height:9,borderRadius:'50%',background:srtRunning?'#ff3b3b':'rgba(255,255,255,0.35)',boxShadow:srtRunning?'0 0 13px #ff3b3b':'none',animation:srtRunning?'kdrPulse 1.1s infinite':'none'}} />
             <span style={{fontSize:'0.7rem',fontWeight:900,letterSpacing:'0.08em'}}>{srtRunning ? (srtReconnecting ? 'RECONNECTING' : 'LIVE') : 'STANDBY'}</span>
@@ -1637,11 +1637,111 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             .mobile-overlay { padding: max(.55rem, env(safe-area-inset-top)) max(.7rem, env(safe-area-inset-right)) max(.55rem, env(safe-area-inset-bottom)) max(.7rem, env(safe-area-inset-left)); }
             .mobile-header { padding-top:.15rem; }
             .mobile-footer { gap:.45rem; padding-bottom:max(.35rem, env(safe-area-inset-bottom)); }
-            .kdr-camera-controls { gap:.32rem !important; padding:.18rem .24rem !important; border-radius:17px !important; }
-            .kdr-camera-controls .mobile-btn-circle { width:42px !important; height:42px !important; min-width:42px; min-height:42px; }
-            .kdr-camera-controls .mobile-btn-circle:nth-child(4) { width:44px !important; height:44px !important; min-width:44px; min-height:44px; }
+
+            /* LANDSCAPE HUD: every element gets its own lane so nothing overlaps. */
+            .kdr-top-header {
+              padding-left:4.25rem !important;
+              padding-right:1rem !important;
+              min-height:3.35rem;
+              align-items:flex-start !important;
+              justify-content:flex-start !important;
+              gap:.3rem !important;
+              pointer-events:none;
+            }
+            .kdr-top-header > div:first-child {
+              max-width:42vw;
+              padding-top:.05rem;
+            }
+            .kdr-top-header > div:first-child span:first-child {
+              font-size:.82rem !important;
+              letter-spacing:.08em;
+              text-transform:uppercase;
+            }
+            .kdr-top-header > div:first-child span:nth-child(2) {
+              font-size:.52rem !important;
+              opacity:.68;
+              letter-spacing:.04em;
+            }
+            .kdr-header-status { display:none !important; }
+
+            .kdr-network-pill {
+              top:3.75rem !important;
+              right:1rem !important;
+              z-index:26 !important;
+              padding:.3rem .5rem !important;
+              border-radius:10px !important;
+              font-size:.58rem !important;
+            }
+
+            .kdr-srt-top {
+              top:.72rem !important;
+              right:7.8rem !important;
+              z-index:27 !important;
+            }
+            .kdr-srt-top > button {
+              height:34px !important;
+              min-width:64px !important;
+              padding:0 .55rem !important;
+              font-size:.58rem !important;
+              border-radius:10px !important;
+            }
+
+            .kdr-live-strip {
+              top:4.95rem !important;
+              left:1rem !important;
+              right:1rem !important;
+              gap:.5rem !important;
+            }
+            .kdr-live-strip .kdr-live-badge {
+              padding:.36rem .58rem !important;
+              border-radius:10px !important;
+              font-size:.58rem !important;
+            }
+            .kdr-live-strip > div:nth-child(2) {
+              display:none !important;
+            }
+
+            .kdr-pro-camera-hud {
+              top:6.1rem !important;
+              right:1rem !important;
+              bottom:auto !important;
+              left:auto !important;
+              z-index:28 !important;
+            }
+            .kdr-pro-camera-hud .kdr-lens-pill {
+              min-width:32px;
+              min-height:32px;
+            }
+
+            .kdr-broadcast-hud {
+              right:1rem !important;
+              bottom:9.8rem !important;
+              z-index:28 !important;
+            }
+
+            .kdr-camera-controls {
+              gap:.32rem !important;
+              padding:.18rem .24rem !important;
+              border-radius:17px !important;
+            }
+            .kdr-camera-controls .mobile-btn-circle {
+              width:42px !important;
+              height:42px !important;
+              min-width:42px;
+              min-height:42px;
+            }
+            .kdr-camera-controls .mobile-btn-circle:nth-child(4) {
+              width:44px !important;
+              height:44px !important;
+              min-width:44px;
+              min-height:44px;
+            }
             .kdr-camera-controls .mobile-btn-circle span { font-size:.96rem !important; }
-            .kdr-camera-stats { gap:.42rem !important; padding:.24rem .46rem !important; font-size:.52rem !important; }
+            .kdr-camera-stats {
+              gap:.42rem !important;
+              padding:.24rem .46rem !important;
+              font-size:.52rem !important;
+            }
           }
           @media (orientation: portrait) {
             .mobile-view { min-height:100dvh; height:100dvh; }
