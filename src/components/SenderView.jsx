@@ -1129,13 +1129,17 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         </div>
 
         {/* Native SRT controls */}
-        <div style={{ position: 'absolute', top: '88px', left: '1rem', right: '1rem', zIndex: 20 }}>
-          <button onClick={() => setShowSrtPanel(v => !v)} style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '12px', border: '1px solid rgba(0,242,254,0.25)', background: 'rgba(0,0,0,0.62)', color: '#fff', backdropFilter: 'blur(10px)', fontWeight: 700 }}>
+        <div style={{ position: 'absolute', top: '5.05rem', left: '0.8rem', right: '0.8rem', zIndex: 20 }}>
+          <button onClick={() => setShowSrtPanel(v => !v)} style={{ width: '100%', minHeight: '42px', padding: '0.55rem 0.8rem', borderRadius: '14px', border: srtRunning ? '1px solid rgba(255,70,70,0.45)' : '1px solid rgba(0,242,254,0.25)', background: srtRunning ? 'rgba(90,12,16,0.72)' : 'rgba(0,0,0,0.58)', color: '#fff', backdropFilter: 'blur(14px)', boxShadow: '0 8px 24px rgba(0,0,0,0.22)', fontWeight: 800, letterSpacing: '0.02em' }}>
             {srtRunning ? (srtReconnecting ? '🟠 SRT RECONNECTING' : '🔴 SRT LIVE') : '📡 SRT STREAM'} {showSrtPanel ? '▲' : '▼'}
           </button>
           {showSrtPanel && (
-            <div className="glass-panel" style={{ marginTop: '0.5rem', padding: '0.9rem', background: 'rgba(8,9,12,0.94)' }}>
-              <div style={{ display: 'grid', gap: '0.55rem' }}>
+            <div className="glass-panel kdr-settings-sheet" style={{ position:'absolute', top:'3.15rem', left:0, right:0, maxHeight:'min(62vh, 560px)', overflowY:'auto', marginTop:0, padding:'1rem', borderRadius:'20px', background:'rgba(7,9,13,0.97)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 20px 60px rgba(0,0,0,0.55)', backdropFilter:'blur(22px)' }}>
+              <div style={{ display: 'grid', gap: '0.65rem' }}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingBottom:'0.15rem'}}>
+                  <div><div style={{fontSize:'0.82rem',fontWeight:900,color:'#fff'}}>📡 SRT OUTPUT</div><div style={{fontSize:'0.62rem',color:'rgba(255,255,255,0.48)',marginTop:'0.12rem'}}>Koneksi kamera → OBS • pengaturan tersimpan</div></div>
+                  <div style={{display:'inline-flex',alignItems:'center',gap:'0.35rem',padding:'0.28rem 0.5rem',borderRadius:'999px',background:srtRunning?'rgba(255,55,55,0.14)':'rgba(0,242,254,0.08)',border:srtRunning?'1px solid rgba(255,70,70,0.28)':'1px solid rgba(0,242,254,0.18)',fontSize:'0.6rem',fontWeight:800,color:'#fff'}}><span style={{width:6,height:6,borderRadius:'50%',background:srtRunning?'#ff4545':'#00f2fe',boxShadow:srtRunning?'0 0 8px #ff4545':'none'}} />{srtRunning ? (srtReconnecting ? 'RETRY' : 'LIVE') : 'READY'}</div>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.45rem' }}>
                   <select
                     className="control-select"
@@ -1166,7 +1170,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
                   <div style={{ fontSize:'0.72rem', color:'var(--text-secondary)', alignSelf:'center' }}>{srtEndpoint || 'srt://IP-PC:9000'}</div>
                   <button type="button" onClick={scanSrtQr} disabled={srtRunning || srtQrScanning} style={{ borderRadius:'10px', border:'1px solid rgba(0,242,254,0.35)', background:'rgba(0,242,254,0.10)', color:'#fff', padding:'0.55rem 0.7rem', fontWeight:700 }}>{srtQrScanning ? '📷 MENCARI QR...' : '📷 SCAN QR OBS'}</button>
                 </div>
-                <input className="control-input" value={srtStreamId} onChange={e => setSrtStreamId(e.target.value)} placeholder="Stream ID" disabled={srtRunning} />
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.45rem'}}><div style={{padding:'0.55rem 0.65rem',borderRadius:'12px',background:'rgba(255,255,255,0.045)',border:'1px solid rgba(255,255,255,0.08)'}}><div style={{fontSize:'0.58rem',color:'rgba(255,255,255,0.42)',letterSpacing:'0.05em'}}>ENDPOINT</div><div style={{fontSize:'0.66rem',fontFamily:'monospace',color:'#fff',marginTop:'0.15rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{srtEndpoint || 'srt://IP-PC:9000'}</div></div><div style={{padding:'0.55rem 0.65rem',borderRadius:'12px',background:'rgba(255,255,255,0.045)',border:'1px solid rgba(255,255,255,0.08)'}}><div style={{fontSize:'0.58rem',color:'rgba(255,255,255,0.42)',letterSpacing:'0.05em'}}>TARGET</div><div style={{fontSize:'0.66rem',color:'#fff',marginTop:'0.15rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{srtStreamId || 'kdr-stream'}</div></div></div><input className="control-input" value={srtStreamId} onChange={e => setSrtStreamId(e.target.value)} placeholder="Stream ID" disabled={srtRunning} />
                 <input className="control-input" type="password" value={srtPassphrase} onChange={e => setSrtPassphrase(e.target.value)} placeholder="Passphrase (opsional)" disabled={srtRunning} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem' }}>
                   <input className="control-input" type="number" min="20" max="1000" value={srtLatency} onChange={e => setSrtLatency(Number(e.target.value))} placeholder="Latency ms" disabled={srtRunning} />
@@ -1264,13 +1268,17 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
 
         <style>{`
           @keyframes kdrPulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.45; transform:scale(.82); } }
+          @keyframes kdrSheetIn { from { opacity:0; transform:translateY(12px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+          .kdr-settings-sheet { animation:kdrSheetIn .18s ease-out; }
+          .kdr-tap { transition:transform .12s ease, opacity .12s ease; }
+          .kdr-tap:active { transform:scale(.96); opacity:.88; }
         `}</style>
 
         {/* Camera settings bottom sheet */}
         {showSettings && (
-          <div style={{position:'absolute',left:'0.7rem',right:'0.7rem',bottom:'7.2rem',zIndex:30,maxHeight:'58vh',overflowY:'auto',padding:'0.9rem',borderRadius:'18px',background:'rgba(8,9,12,0.96)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(18px)',boxShadow:'0 18px 50px rgba(0,0,0,0.45)'}}>
+          <div className="kdr-settings-sheet" style={{position:'absolute',left:'0.7rem',right:'0.7rem',bottom:'7.15rem',zIndex:30,maxHeight:'60vh',overflowY:'auto',padding:'1rem',borderRadius:'22px',background:'rgba(7,9,13,0.97)',border:'1px solid rgba(255,255,255,0.13)',backdropFilter:'blur(22px)',boxShadow:'0 22px 60px rgba(0,0,0,0.58)'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.7rem'}}>
-              <div><div style={{fontWeight:900,color:'#fff'}}>⚙️ PENGATURAN KAMERA</div><div style={{fontSize:'0.65rem',color:'rgba(255,255,255,0.48)',marginTop:'0.15rem'}}>Pengaturan cepat • tersimpan otomatis</div></div>
+              <div><div style={{fontWeight:900,color:'#fff',fontSize:'0.86rem'}}>⚙️ PENGATURAN KAMERA</div><div style={{fontSize:'0.62rem',color:'rgba(255,255,255,0.48)',marginTop:'0.18rem'}}>Kontrol gambar, frame rate, audio & zoom</div></div>
               <button type="button" onClick={()=>setShowSettings(false)} style={{width:34,height:34,border:0,borderRadius:12,background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'1rem'}}>✕</button>
             </div>
             <div style={{display:'grid',gap:'0.65rem'}}>
@@ -1307,14 +1315,14 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         {/* Bottom controls */}
         <div className="mobile-footer">
           {/* Active stats */}
-          <div style={{ display: 'flex', gap: '1rem', background: 'rgba(0, 0, 0, 0.6)', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ display: 'flex', gap: '0.72rem', alignItems:'center', background: 'rgba(0, 0, 0, 0.56)', padding: '0.42rem 0.72rem', borderRadius: '14px', fontSize: '0.64rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.82)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter:'blur(12px)', maxWidth:'calc(100vw - 1.4rem)', overflow:'hidden' }}>
             <div>CAM: {activeCamera === 'screen' ? 'LAYAR' : (activeCamera === 'environment' ? 'BELAKANG' : 'DEPAN')}</div>
             <div>RES: {activeResolution}</div>
             <div>FPS: {activeFps}</div>
             <div>NET: {networkType}</div>
           </div>
 
-          <div style={{display:'flex',gap:'0.55rem',alignItems:'center',justifyContent:'center',width:'100%',padding:'0.28rem 0.4rem',borderRadius:'22px',background:'rgba(0,0,0,0.34)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(10px)'}}>            <button type="button" onClick={()=>setShowSettings(v=>!v)} className="mobile-btn-circle" title="Pengaturan" style={{width:'48px',height:'48px',background:showSettings?'rgba(0,242,254,0.2)':'rgba(255,255,255,0.12)'}}><span style={{fontSize:'1.2rem'}}>⚙️</span></button>
+          <div style={{display:'flex',gap:'0.55rem',alignItems:'center',justifyContent:'center',width:'100%',padding:'0.28rem 0.4rem',borderRadius:'22px',background:'rgba(0,0,0,0.34)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(10px)'}}>            <button type="button" onClick={()=>setShowSettings(v=>!v)} className="mobile-btn-circle kdr-tap" title="Pengaturan" style={{width:'48px',height:'48px',background:showSettings?'rgba(0,242,254,0.2)':'rgba(255,255,255,0.12)'}}><span style={{fontSize:'1.2rem'}}>⚙️</span></button>
             <button
               onClick={() => {
                 const nextAudio = !isAudioEnabled;
@@ -1327,7 +1335,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
                   }));
                 }
               }}
-              className={`mobile-btn-circle ${isAudioEnabled ? 'active' : ''}`}
+              className={`mobile-btn-circle kdr-tap ${isAudioEnabled ? 'active' : ''}`}
               title="Toggle Microphone"
               style={{ backgroundColor: isAudioEnabled ? 'var(--accent-green)' : 'rgba(255, 255, 255, 0.15)' }}
             >
@@ -1356,7 +1364,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
                     }));
                   }
                 }}
-                className={`mobile-btn-circle ${activeCamera === 'screen' ? 'active' : ''}`}
+                className={`mobile-btn-circle kdr-tap ${activeCamera === 'screen' ? 'active' : ''}`}
                 title="Screen Share"
                 style={{ backgroundColor: activeCamera === 'screen' ? 'var(--accent-blue)' : 'rgba(255, 255, 255, 0.15)' }}
               >
@@ -1367,7 +1375,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             {/* Flip camera */}
             <button
               onClick={toggleCameraLocal}
-              className="mobile-btn-circle"
+              className="mobile-btn-circle kdr-tap"
               style={{ width: '58px', height: '58px', background: 'rgba(255, 255, 255, 0.18)', boxShadow:'0 4px 16px rgba(0,0,0,0.22)' }}
               title="Flip Camera"
             >
@@ -1377,7 +1385,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             {/* Pause toggle button */}
             <button
               onClick={() => applyPause(!isPaused)}
-              className={`mobile-btn-circle ${isPaused ? 'active' : ''}`}
+              className={`mobile-btn-circle kdr-tap ${isPaused ? 'active' : ''}`}
               style={{ backgroundColor: isPaused ? 'var(--accent-red)' : 'rgba(255, 255, 255, 0.15)' }}
               title={isPaused ? 'Mulai Streaming' : 'Tangguhkan Streaming'}
             >
