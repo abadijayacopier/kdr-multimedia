@@ -1485,7 +1485,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
 
         {/* Compact zoom controls — horizontal, outside the center camera area */}
         {(zoomSupported || focusSupported) && (
-          <div style={{position:'absolute',right:'0.85rem',bottom:'8.0rem',zIndex:22,display:'flex',alignItems:'center',gap:'0.28rem',padding:'0.3rem',borderRadius:'16px',background:'rgba(0,0,0,0.58)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',boxShadow:'0 8px 24px rgba(0,0,0,0.25)'}}>
+          <div className="kdr-zoom-controls" style={{position:'absolute',right:'0.85rem',bottom:'8.0rem',zIndex:22,display:'flex',alignItems:'center',gap:'0.28rem',padding:'0.3rem',borderRadius:'16px',background:'rgba(0,0,0,0.58)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',boxShadow:'0 8px 24px rgba(0,0,0,0.25)'}}>
             {zoomSupported && (
               <>
                 <button type="button" onClick={()=>applyZoom(Math.max(zoomRange.min, zoomValue-zoomRange.step))} aria-label="Zoom out" title="Zoom out" style={{width:40,height:40,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍 −</button>
@@ -1715,9 +1715,18 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
 
             .kdr-broadcast-hud {
               right:1rem !important;
-              bottom:9.8rem !important;
-              z-index:28 !important;
+              bottom:8.5rem !important;
+              z-index:30 !important;
             }
+            .kdr-broadcast-hud > button { min-height:36px !important; padding:.45rem .72rem !important; font-size:.62rem !important; }
+            .kdr-broadcast-hud > div { gap:.3rem !important; }
+
+            .kdr-zoom-controls {
+              right:1rem !important;
+              bottom:3.4rem !important;
+              z-index:29 !important;
+            }
+            .kdr-zoom-controls button { width:38px !important; height:38px !important; min-width:38px !important; }
 
             .kdr-camera-controls {
               gap:.32rem !important;
