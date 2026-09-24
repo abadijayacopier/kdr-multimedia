@@ -21,7 +21,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
 
   // New features
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
-  const [activeFps, setActiveFps] = useState(30);
+  const [activeFps, setActiveFps] = useState(() => Number(localStorage.getItem('kdr_camera_fps') || 30));
+  const [qualityPreset, setQualityPreset] = useState(() => localStorage.getItem('kdr_camera_quality') || 'balanced');
   const [isTallyActive, setIsTallyActive] = useState(false);
   const [srtRunning, setSrtRunning] = useState(false);
   const [srtReconnecting, setSrtReconnecting] = useState(false);
@@ -71,6 +72,24 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
     const minutes = Math.floor((total % 3600) / 60);
     const seconds = total % 60;
     return [hours, minutes, seconds].map((value, index) => index === 0 ? String(value).padStart(2, '0') : String(value).padStart(2, '0')).join(':');
+  };
+
+  const qualityPresets = {
+    performance: { label: 'HEMAT DATA', resolution: '720p', fps: 24, bitrate: 2000000 },
+    balanced: { label: 'SEIMBANG', resolution: '1080p', fps: 30, bitrate: 4000000 },
+    quality: { label: 'KUALITAS', resolution: '1080p', fps: 60, bitrate: 6000000 },
+    ultra: { label: 'ULTRA', resolution: '4k', fps: 30, bitrate: 8000000 }
+  };
+
+  const applyQualityPreset = (key) => {
+    const preset = qualityPresets[key] || qualityPresets.balanced;
+    setQualityPreset(key);
+    setActiveResolution(preset.resolution);
+    setActiveFps(preset.fps);
+    setSrtBitrate(preset.bitrate);
+    localStorage.setItem('kdr_camera_quality', key);
+    localStorage.setItem('kdr_camera_fps', String(preset.fps));
+    localStorage.setItem('kdr_srt_bitrate', String(preset.bitrate));
   };
 
   const srtDimensions = activeResolution === '720p'
@@ -1051,9 +1070,9 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
               {connectionMode === 'srt' ? 'SRT → OBS' : `Room: ${roomId}`}
             </span>
           </div>
-          <div className={`badge ${connected ? 'badge-connected' : 'badge-disconnected'}`} style={{ backdropFilter: 'blur(10px)' }}>
-            <span className={`badge-dot ${connected ? 'blink' : ''}`}></span>
-            {connected ? 'ONLINE' : 'OFFLINE'}
+          <div className={`badge ${connectionMode === 'srt' ? (srtRunning ? 'badge-connected' : 'badge-disconnected') : (connected ? 'badge-connected' : 'badge-disconnected')}`} style={{ backdropFilter: 'blur(10px)' }}>
+            <span className={`badge-dot ${(connectionMode === 'srt' ? srtRunning : connected) ? 'blink' : ''}`}></span>
+            {connectionMode === 'srt' ? (srtReconnecting ? 'SRT RETRY' : (srtRunning ? 'SRT LIVE' : 'SRT READY')) : (connected ? 'ONLINE' : 'OFFLINE')}
           </div>
         </div>
 
@@ -1118,6 +1137,18 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
                     >💾 SIMPAN</button>
                   </div>
                 )}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.45rem' }}>
+                  <div>
+                    <div style={{fontSize:'0.68rem',color:'var(--text-secondary)',marginBottom:'0.25rem'}}>PRESET KUALITAS</div>
+                    <select className="control-select" value={qualityPreset} onChange={e=>applyQualityPreset(e.target.value)} disabled={srtRunning}>
+                      {Object.entries(qualityPresets).map(([key,p])=><option key={key} value={key}>{p.label} • {p.resolution.toUpperCase()} {p.fps}FPS</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{fontSize:'0.68rem',color:'var(--text-secondary)',marginBottom:'0.25rem'}}>AUDIO</div>
+                    <button type="button" className={`btn ${isAudioEnabled ? 'btn-primary' : 'btn-secondary'}`} style={{width:'100%',padding:'0.7rem'}} onClick={()=>{const next=!isAudioEnabled;setIsAudioEnabled(next);}} disabled={srtRunning}>{isAudioEnabled?'🎙️ AUDIO ON':'🔇 AUDIO OFF'}</button>
+                  </div>
+                </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{activeResolution.toUpperCase()} • {activeFps} FPS • {Math.round(Number(srtBitrate) / 1000000)} Mbps • Audio {isAudioEnabled ? 'ON' : 'OFF'}</div>
                 {srtRunning && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem', fontSize: '0.72rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.82)' }}>
