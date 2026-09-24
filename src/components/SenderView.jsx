@@ -24,6 +24,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const [activeFps, setActiveFps] = useState(() => Number(localStorage.getItem('kdr_camera_fps') || 30));
   const [qualityPreset, setQualityPreset] = useState(() => localStorage.getItem('kdr_camera_quality') || 'balanced');
   const [isTallyActive, setIsTallyActive] = useState(false);
+  const [batteryLevel, setBatteryLevel] = useState(null);
+  const [batteryCharging, setBatteryCharging] = useState(false);
   const [srtRunning, setSrtRunning] = useState(false);
   const [srtReconnecting, setSrtReconnecting] = useState(false);
   const [srtError, setSrtError] = useState(null);
@@ -58,6 +60,31 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   });
   const [activeSrtProfile, setActiveSrtProfile] = useState(() => localStorage.getItem('kdr_srt_active_profile') || '');
   const [newSrtProfileName, setNewSrtProfileName] = useState('');
+
+  useEffect(() => {
+    let battery = null;
+    const updateBattery = () => {
+      if (!battery) return;
+      setBatteryLevel(Math.round(battery.level * 100));
+      setBatteryCharging(Boolean(battery.charging));
+    };
+    if (navigator.getBattery) {
+      navigator.getBattery().then((b) => {
+        battery = b;
+        updateBattery();
+        b.addEventListener('levelchange', updateBattery);
+        b.addEventListener('chargingchange', updateBattery);
+      }).catch(() => {});
+    }
+    return () => {
+      if (battery) {
+        battery.removeEventListener('levelchange', updateBattery);
+        battery.removeEventListener('chargingchange', updateBattery);
+      }
+    };
+  }, []);
+
+  const batteryIcon = batteryCharging ? '⚡' : batteryLevel === null ? '🔋' : batteryLevel <= 15 ? '🪫' : batteryLevel <= 35 ? '🔋' : '🔋';
 
   const localVideoRef = useRef(null);
   const streamRef = useRef(null);
