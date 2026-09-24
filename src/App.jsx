@@ -283,7 +283,15 @@ export default function App() {
 
   if (role === 'sender') {
     const senderRoom = senderMode === 'srt' ? (roomId || 'SRT') : roomId;
-    return <SenderView roomId={senderRoom} roomPin={roomPin} connectionMode={senderMode} />;
+    const handleBackToModeSelector = () => {
+      setSenderMode(null);
+      localStorage.removeItem('kdr_sender_mode');
+      const params = new URLSearchParams(window.location.search);
+      params.delete('mode');
+      const query = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''));
+    };
+    return <SenderView roomId={senderRoom} roomPin={roomPin} connectionMode={senderMode} onBackToModeSelector={handleBackToModeSelector} />;
   }
 
   // Receiver Mode: Multi-Camera Dashboard (Grid View)
