@@ -883,6 +883,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
 
   // Setup Mobile Camera
   const setupCamera = async (camera, resolution, fps = activeFps, audio = isAudioEnabled) => {
+    setMediaErrorType(null);
     if (!navigator.mediaDevices) {
       setMediaErrorType('insecure');
       setStatus('Gagal: Browser memblokir akses media (SSL/HTTPS diperlukan).');
@@ -998,8 +999,10 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
       }
     } catch (err) {
       console.error('Error accessing camera:', err);
-      setMediaErrorType('permission');
-      setStatus(`Gagal mengakses kamera: ${err.message}`);
+      stopAllMedia();
+      setConnected(false);
+      setMediaErrorType(err?.name === 'NotAllowedError' || err?.name === 'SecurityError' ? 'permission' : 'insecure');
+      setStatus(err?.name === 'NotAllowedError' ? 'Izin kamera/mikrofon ditolak. Izinkan akses lalu coba lagi.' : `Gagal mengakses kamera: ${err?.message || 'kesalahan tidak diketahui'}`);
     }
   };
 
