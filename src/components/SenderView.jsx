@@ -1371,6 +1371,17 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           </div>
         </div>
 
+        {/* Professional lens HUD */}
+        {(zoomSupported || focusSupported) && !srtRunning && (
+          <div style={{position:'absolute',left:'50%',bottom:'14.9rem',transform:'translateX(-50%)',zIndex:20,display:'flex',alignItems:'center',gap:'0.35rem',padding:'0.28rem 0.35rem',borderRadius:'999px',background:'rgba(5,7,10,0.62)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(12px)',boxShadow:'0 8px 24px rgba(0,0,0,0.24)'}}>
+            {zoomSupported && [1, 2, 4].filter((v) => v >= zoomRange.min && v <= zoomRange.max).map((v) => (
+              <button key={v} type="button" onClick={() => applyZoom(v)} className="kdr-lens-pill kdr-tap" style={{minWidth:'38px',height:'30px',padding:'0 0.5rem',border:0,borderRadius:'999px',background:Math.abs(zoomValue-v)<0.05?'rgba(0,242,254,0.22)':'rgba(255,255,255,0.08)',color:Math.abs(zoomValue-v)<0.05?'#fff':'rgba(255,255,255,0.7)',fontSize:'0.62rem',fontWeight:800,fontFamily:'monospace'}}>{v}×</button>
+            ))}
+            {zoomSupported && <span style={{fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.48)',padding:'0 0.18rem'}}>{zoomValue.toFixed(1)}×</span>}
+            {focusSupported && <button type="button" onClick={() => { const modes = focusModes.length ? focusModes : ['continuous']; const idx = Math.max(0,modes.indexOf(currentFocusMode)); applyFocusMode(modes[(idx+1)%modes.length]); }} className="kdr-lens-pill kdr-tap" style={{height:'30px',padding:'0 0.62rem',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'999px',background:'rgba(255,255,255,0.08)',color:'#fff',fontSize:'0.58rem',fontWeight:800,fontFamily:'monospace'}}><span style={{marginRight:'0.25rem'}}>◎</span>{String(currentFocusMode || 'AUTO').toUpperCase()}</button>}
+          </div>
+        )}
+
         {/* Broadcast REC / timecode HUD */}
         <div style={{position:'absolute',right:'0.85rem',bottom:'10.75rem',zIndex:19,pointerEvents:'none',display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.35rem'}}>
           <div style={{display:'inline-flex',alignItems:'center',gap:'0.42rem',padding:'0.36rem 0.58rem',borderRadius:'10px',background:'rgba(0,0,0,0.52)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(10px)',fontFamily:'monospace',fontSize:'0.62rem',color:'#fff'}}>
