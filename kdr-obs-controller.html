@@ -4,78 +4,81 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KDR OBS Controller</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#08090c;color:#f5f7fa;font-family:Segoe UI,Arial,sans-serif}
-header{padding:22px 28px;border-bottom:1px solid #20242c;display:flex;justify-content:space-between;align-items:center}
-h1{margin:0;font-size:24px}small{color:#8791a1}.badge{padding:7px 12px;border-radius:20px;background:#252a33;color:#aab3c0}
-main{padding:24px;display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.card{background:#11151b;border:1px solid #242a33;border-radius:14px;padding:18px}
-h2{font-size:16px;margin:0 0 15px}.row{display:flex;gap:10px;margin-bottom:10px}.row>*{flex:1}
-input,select{width:100%;background:#090c10;color:#fff;border:1px solid #303744;border-radius:8px;padding:11px}
-button{border:0;border-radius:9px;padding:11px 14px;background:#242b35;color:#fff;cursor:pointer;font-weight:600}button:hover{filter:brightness(1.15)}button.primary{background:#087f8c}button.danger{background:#a8324d}
-button:disabled{opacity:.45;cursor:not-allowed}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:14px;background:#0b0f14;border-radius:10px;border:1px solid #202630}.label{font-size:11px;color:#7f8998;text-transform:uppercase}.value{margin-top:6px;font-size:18px;font-weight:700}
-.scene{display:flex;gap:8px;align-items:center;margin:7px 0}.scene span{flex:1}.log{height:190px;overflow:auto;background:#080b0f;padding:10px;border-radius:8px;font:12px Consolas,monospace;color:#aeb8c7}
-.hint{margin:7px 0 0}.ok{color:#55e39b}.warn{color:#f0c674}.bad{color:#ff6b81}
-@media(max-width:850px){main{grid-template-columns:1fr}}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:#070a0f;color:#f5f7fa;font-family:Segoe UI,Arial,sans-serif}
+button,input,select{font:inherit}button{border:0;border-radius:9px;padding:11px 14px;background:#242b35;color:#fff;cursor:pointer;font-weight:600}button:hover{filter:brightness(1.15)}button.primary{background:#087f8c}button.danger{background:#a8324d}button:disabled{opacity:.45;cursor:not-allowed}
+.app{height:100vh;display:grid;grid-template-columns:235px 1fr;overflow:hidden}.sidebar{background:#0b0f15;border-right:1px solid #202732;padding:18px 12px;display:flex;flex-direction:column}.brand{padding:8px 10px 22px;border-bottom:1px solid #202630;margin-bottom:14px}.brand strong{font-size:18px}.brand small{display:block;color:#7f8998;margin-top:4px}.nav{display:grid;gap:5px}.nav button{background:transparent;text-align:left;color:#aab3c0;padding:12px 13px;border-radius:9px}.nav button:hover{background:#151b24}.nav button.active{background:#087f8c;color:#fff}.sidebar-footer{margin-top:auto;border-top:1px solid #202630;padding:14px 10px;color:#7f8998;font-size:12px}.online-dot{color:#55e39b;font-weight:700}.content{min-width:0;overflow:auto}.topbar{height:76px;padding:16px 26px;border-bottom:1px solid #20242c;display:flex;justify-content:space-between;align-items:center;background:#090d13;position:sticky;top:0;z-index:2}.topbar h1{margin:0;font-size:22px}.topbar small{color:#8791a1}.badge{padding:7px 12px;border-radius:20px;background:#252a33;color:#aab3c0}.page{display:none;padding:24px;max-width:1400px;margin:auto}.page.active{display:block}.page-title{margin:0 0 6px;font-size:24px}.page-subtitle{color:#7f8998;margin:0 0 18px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.cards.three{grid-template-columns:repeat(3,minmax(0,1fr))}.card{background:#11151b;border:1px solid #242a33;border-radius:14px;padding:18px}.card h2{font-size:16px;margin:0 0 15px}.wide{grid-column:1/-1}.row{display:flex;gap:10px;margin-bottom:10px}.row>*{flex:1}input,select{width:100%;background:#090c10;color:#fff;border:1px solid #303744;border-radius:8px;padding:11px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{padding:14px;background:#0b0f14;border-radius:10px;border:1px solid #202630}.label{font-size:11px;color:#7f8998;text-transform:uppercase}.value{margin-top:6px;font-size:18px;font-weight:700}.scene{display:flex;gap:8px;align-items:center;margin:7px 0}.scene span{flex:1}.log{height:190px;overflow:auto;background:#080b0f;padding:10px;border-radius:8px;font:12px Consolas,monospace;color:#aeb8c7}.hint{margin:7px 0 0;color:#8791a1}.ok{color:#55e39b}.warn{color:#f0c674}.bad{color:#ff6b81}.hero{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}.hero-preview{min-height:250px;display:flex;align-items:center;justify-content:center;background:#080b10;border:1px solid #202630;border-radius:12px;color:#657083}.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.qr-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}.qr-box{background:#fff;padding:10px;border-radius:10px}.nav-note{font-size:11px;color:#667180;margin-top:10px}
+@media(max-width:900px){.app{grid-template-columns:72px 1fr}.brand strong,.brand small,.nav button span,.sidebar-footer{display:none}.nav button{text-align:center;font-size:20px}.hero{grid-template-columns:1fr}.cards,.cards.three{grid-template-columns:1fr}.kpi{grid-template-columns:repeat(2,1fr)}}
 </style></head>
 <body>
-<header><div><h1>🎥 KDR OBS Controller</h1><small>Controller Windows untuk OBS Studio</small></div><div id="conn" class="badge">OFFLINE</div></header>
-<main>
-<section class="card">
-<h2>OBS WebSocket</h2>
-<div class="row"><input id="host" value="ws://127.0.0.1:4455" placeholder="ws://127.0.0.1:4455"><input id="password" type="password" placeholder="Password OBS"></div>
-<div class="row"><button class="primary" id="connect">Hubungkan OBS</button><button id="disconnect">Putuskan</button></div>
-<p class="hint"><small>OBS Studio harus mengaktifkan WebSocket Server pada port 4455.</small></p>
-<div class="grid">
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><strong>🎥 KDR MULTIMEDIA</strong><small>OBS Controller</small></div>
+  <nav class="nav">
+    <button class="active" data-page="dashboard"><span>🏠 Dashboard</span></button>
+    <button data-page="srt"><span>📡 SRT Receiver</span></button>
+    <button data-page="scene"><span>🎬 Scene</span></button>
+    <button data-page="stream"><span>📺 Streaming</span></button>
+    <button data-page="record"><span>🔴 Recording</span></button>
+    <button data-page="audio"><span>🔊 Audio</span></button>
+    <button data-page="camera"><span>📷 KDR Camera</span></button>
+    <button data-page="settings"><span>⚙️ Pengaturan</span></button>
+  </nav>
+  <div class="sidebar-footer">● <span class="online-dot">OBS</span><br><span id="sidebarConn">Offline</span></div>
+</aside>
+<div class="content">
+<header class="topbar"><div><h1 id="pageHeading">Dashboard</h1><small>KDR OBS Controller • Windows</small></div><div id="conn" class="badge">OFFLINE</div></header>
+
+<section class="page active" id="page-dashboard">
+<h2 class="page-title">Dashboard</h2><p class="page-subtitle">Kontrol utama OBS dan monitoring KDR Camera.</p>
+<div class="kpi">
 <div class="stat"><div class="label">Streaming</div><div class="value" id="stream">OFF</div></div>
 <div class="stat"><div class="label">Recording</div><div class="value" id="record">OFF</div></div>
 <div class="stat"><div class="label">Scene</div><div class="value" id="currentScene">-</div></div>
 <div class="stat"><div class="label">FPS / Bitrate</div><div class="value" id="stats">-</div></div>
 </div>
-</section>
-<section class="card">
-<h2>Kontrol</h2>
-<div class="row"><button class="primary" id="startStream">▶ Start Streaming</button><button class="danger" id="stopStream">■ Stop Streaming</button></div>
-<div class="row"><button class="primary" id="startRecord">● Start Recording</button><button class="danger" id="stopRecord">■ Stop Recording</button></div>
-<h2 style="margin-top:18px">Audio</h2>
-<div class="row"><select id="audioInput"><option value="Mic/Aux">Mic/Aux</option></select></div>
+<div class="hero" style="margin-top:18px">
+<div class="card"><h2>Preview</h2><div class="hero-preview">Preview OBS akan tampil di sini setelah koneksi WebSocket aktif.</div></div>
+<div class="card"><h2>Quick Control</h2>
+<div class="row"><button class="primary" id="startStream">▶ Start Streaming</button><button class="danger" id="stopStream">■ Stop</button></div>
+<div class="row"><button class="primary" id="startRecord">● Start Recording</button><button class="danger" id="stopRecord">■ Stop</button></div>
 <div class="row"><button id="mute">🔇 Mute</button><button id="unmute">🔊 Unmute</button></div>
+</div></div>
+<div class="card" style="margin-top:18px"><h2>OBS WebSocket</h2>
+<div class="row"><input id="host" value="ws://127.0.0.1:4455" placeholder="ws://127.0.0.1:4455"><input id="password" type="password" placeholder="Password OBS"></div>
+<div class="row"><button class="primary" id="connect">Hubungkan OBS</button><button id="disconnect">Putuskan</button></div>
+<p class="hint"><small>OBS Studio harus mengaktifkan WebSocket Server pada port 4455.</small></p></div>
 </section>
-<section class="card">
-<h2>Scene OBS</h2><div id="scenes">Hubungkan OBS untuk memuat scene.</div>
-</section>
-<section class="card">
-<h2>📡 KDR Camera SRT → OBS</h2>
-<div class="row"><input id="srtUrl" placeholder="srt://0.0.0.0:9000?mode=listener"><input id="srtName" value="KDR Camera SRT" placeholder="Nama Source OBS"></div>
+
+<section class="page" id="page-srt">
+<h2 class="page-title">SRT Receiver</h2><p class="page-subtitle">Terima stream SRT dari KDR Camera dan masukkan otomatis ke OBS.</p>
+<div class="cards">
+<div class="card"><h2>📷 QR SRT untuk KDR Camera</h2><div class="row"><input id="srtHost" readonly placeholder="IP PC"><input id="srtPort" value="9000" inputmode="numeric" placeholder="Port"></div>
+<div class="qr-wrap"><div class="qr-box"><img id="srtQr" alt="QR konfigurasi SRT" width="220" height="220"></div><div style="min-width:240px;flex:1"><div class="stat"><div class="label">Endpoint HP</div><div class="value" id="srtEndpointPc">srt://IP-PC:9000</div></div><p class="hint"><small>Di KDR Camera pilih <b>📡 SRT → OBS</b>, lalu tekan <b>SCAN QR OBS</b>.</small></p><button id="refreshQr">🔄 Perbarui QR</button></div></div></div>
+<div class="card"><h2>📡 SRT Source OBS</h2><div class="row"><input id="srtUrl" placeholder="srt://0.0.0.0:9000?mode=listener"><input id="srtName" value="KDR Camera SRT" placeholder="Nama Source OBS"></div>
 <div class="row"><button class="primary" id="createSrt">Buat / Update SRT Source</button><button id="refreshSrt">Refresh</button></div>
-<p class="hint"><small>OBS menerima SRT melalui Media Source/FFmpeg. Untuk listener, gunakan URL seperti <b>srt://0.0.0.0:9000?mode=listener</b> dan format MPEGTS.</small></p>
-<div class="stat"><div class="label">SRT Source</div><div class="value" id="srtSourceState">Belum dibuat</div></div>
-</section>
-<section class="card">
-<h2>📷 QR SRT untuk KDR Camera</h2>
-<div class="row"><input id="srtHost" readonly placeholder="IP PC"><input id="srtPort" value="9000" inputmode="numeric" placeholder="Port"></div>
-<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-  <div style="background:#fff;padding:10px;border-radius:10px"><img id="srtQr" alt="QR konfigurasi SRT" width="220" height="220"></div>
-  <div style="min-width:220px;flex:1">
-    <div class="stat"><div class="label">Endpoint HP</div><div class="value" id="srtEndpointPc">srt://IP-PC:9000</div></div>
-    <p class="hint"><small>Di KDR Camera pilih <b>📡 SRT → OBS</b>, lalu tekan <b>SCAN QR OBS</b>. QR berisi IP PC dan port listener.</small></p>
-    <button id="refreshQr">🔄 Perbarui QR</button>
-  </div>
-</div>
-</section>
-<section class="card">
-<h2>Monitoring</h2>
-<div class="grid">
-<div class="stat"><div class="label">SRT</div><div class="value" id="srt">BELUM TERHUBUNG</div></div>
-<div class="stat"><div class="label">Status OBS</div><div class="value" id="obsState">Offline</div></div>
-</div>
-<p><small>SRT akan diintegrasikan dengan monitoring KDR Camera pada tahap berikutnya.</small></p>
-</section>
-<section class="card" style="grid-column:1/-1"><h2>Log</h2><div class="log" id="log"></div></section>
-</main>
+<p class="hint"><small>Mode listener menggunakan MPEGTS: <b>srt://0.0.0.0:9000?mode=listener</b></small></p>
+<div class="grid"><div class="stat"><div class="label">SRT Source</div><div class="value" id="srtSourceState">Belum dibuat</div></div><div class="stat"><div class="label">Receiver</div><div class="value" id="srt">BELUM TERHUBUNG</div></div></div></div>
+</div></section>
+
+<section class="page" id="page-scene"><h2 class="page-title">Scene</h2><p class="page-subtitle">Pilih scene aktif di OBS.</p><div class="card"><div id="scenes">Hubungkan OBS untuk memuat scene.</div></div></section>
+
+<section class="page" id="page-stream"><h2 class="page-title">Streaming</h2><p class="page-subtitle">Kontrol siaran langsung OBS.</p><div class="cards"><div class="card"><h2>Status Streaming</h2><div class="stat"><div class="label">Status</div><div class="value" id="streamPageState">OFF</div></div></div><div class="card"><h2>Kontrol</h2><div class="row"><button class="primary" id="streamStartPage">▶ Mulai Streaming</button><button class="danger" id="streamStopPage">■ Hentikan</button></div></div></div></section>
+
+<section class="page" id="page-record"><h2 class="page-title">Recording</h2><p class="page-subtitle">Kontrol perekaman lokal OBS.</p><div class="cards"><div class="card"><h2>Status Recording</h2><div class="stat"><div class="label">Status</div><div class="value" id="recordPageState">OFF</div></div></div><div class="card"><h2>Kontrol</h2><div class="row"><button class="primary" id="recordStartPage">● Mulai Recording</button><button class="danger" id="recordStopPage">■ Hentikan</button></div></div></div></section>
+
+<section class="page" id="page-audio"><h2 class="page-title">Audio</h2><p class="page-subtitle">Pilih dan kontrol input audio OBS.</p><div class="card"><h2>Audio Input</h2><div class="row"><select id="audioInput"><option value="Mic/Aux">Mic/Aux</option></select></div><div class="row"><button id="audioMutePage">🔇 Mute</button><button id="audioUnmutePage">🔊 Unmute</button></div></div></section>
+
+<section class="page" id="page-camera"><h2 class="page-title">KDR Camera</h2><p class="page-subtitle">Alur kamera HP menuju OBS.</p><div class="cards three"><div class="stat"><div class="label">Transport</div><div class="value">SRT → OBS</div></div><div class="stat"><div class="label">Receiver</div><div class="value">MPEGTS / FFmpeg</div></div><div class="stat"><div class="label">Port Default</div><div class="value">9000</div></div></div><div class="card" style="margin-top:18px"><h2>Alur</h2><p class="hint">KDR Camera Android → Scan QR → SRT → KDR OBS Controller → OBS Studio.</p></div></section>
+
+<section class="page" id="page-settings"><h2 class="page-title">Pengaturan</h2><p class="page-subtitle">Koneksi OBS WebSocket dan informasi aplikasi.</p><div class="card"><h2>OBS WebSocket</h2><div class="row"><input id="hostSettings" placeholder="ws://127.0.0.1:4455"><button id="copyHost">Salin ke Dashboard</button></div><p class="hint">Port default OBS WebSocket adalah 4455.</p></div></section>
+
+<section class="page" id="page-log"><div class="card"><h2>Log Sistem</h2><div class="log" id="log"></div></div></section>
+</div></div>
 <script>
 let ws=null,rid=1,pending=new Map(),refreshTimer=null;
 const $=id=>document.getElementById(id);
 function log(x){$('log').innerHTML+='['+new Date().toLocaleTimeString()+'] '+x+'<br>';$('log').scrollTop=999999}
-function setConn(ok){$('conn').textContent=ok?'TERHUBUNG':'OFFLINE';$('conn').style.color=ok?'#55e39b':'';$('obsState').textContent=ok?'Connected':'Offline'}
+function setConn(ok){$('conn').textContent=ok?'TERHUBUNG':'OFFLINE';$('conn').style.color=ok?'#55e39b':'';$('sidebarConn').textContent=ok?'Connected':'Offline';$('obsState')&&($('obsState').textContent=ok?'Connected':'Offline');}
 function setButtons(ok){['startStream','stopStream','startRecord','stopRecord','mute','unmute'].forEach(id=>$(id).disabled=!ok)}
 function call(type,data={}){return new Promise((resolve,reject)=>{if(!ws||ws.readyState!==WebSocket.OPEN)return reject(Error('OBS belum terhubung'));const id=String(rid++);pending.set(id,{resolve,reject});ws.send(JSON.stringify({op:6,d:{requestType:type,requestId:id,requestData:data}}));setTimeout(()=>{if(pending.has(id)){pending.delete(id);reject(Error('Timeout: '+type))}},8000)})}
 function bytesToBase64(bytes){let s='';for(const b of new Uint8Array(bytes))s+=String.fromCharCode(b);return btoa(s)}
@@ -117,7 +120,7 @@ function handleEvent(d){
 async function refresh(){
  try{
   const [st,rec,scene,list,stats]=await Promise.all([call('GetStreamStatus'),call('GetRecordStatus'),call('GetCurrentProgramScene'),call('GetSceneList'),call('GetStats')]);
-  $('stream').textContent=st.outputActive?'LIVE':'OFF';$('record').textContent=rec.outputActive?'REC':'OFF';$('currentScene').textContent=scene.currentProgramSceneName;
+  $('stream').textContent=st.outputActive?'LIVE':'OFF';$('record').textContent=rec.outputActive?'REC':'OFF';$('currentScene').textContent=scene.currentProgramSceneName;syncPageStates();
   $('stats').textContent=Math.round(stats.activeFps||0)+' FPS · '+Math.round(stats.outputBytes||0)/1024+' KB';
   const scenes=list.scenes||[];$('scenes').innerHTML='';
   scenes.forEach(s=>{const d=document.createElement('div');d.className='scene';const span=document.createElement('span');span.textContent=s.sceneName;const b=document.createElement('button');b.textContent='Aktifkan';b.onclick=()=>call('SetCurrentProgramScene',{sceneName:s.sceneName}).then(refresh).catch(e=>log(e.message));d.append(span,b);$('scenes').appendChild(d)});
@@ -128,6 +131,7 @@ async function refresh(){
    if([...audio.options].some(o=>o.value===old))audio.value=old;
    if(!audio.options.length){const o=document.createElement('option');o.value='Mic/Aux';o.textContent='Mic/Aux';audio.appendChild(o)}
   }catch(e){log('Gagal memuat input audio: '+e.message)}
+  await refreshSrtSource();
  }catch(e){log(e.message)}
 }
 async function doAction(type,data={}){try{await call(type,data);await refresh()}catch(e){log(e.message)}}
@@ -188,6 +192,8 @@ $('startStream').onclick=()=>doAction('StartStream');$('stopStream').onclick=()=
 $('startRecord').onclick=()=>doAction('StartRecord');$('stopRecord').onclick=()=>doAction('StopRecord');
 $('mute').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,inputMuted:true});
 $('unmute').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,inputMuted:false});
+$('streamStartPage').onclick=()=>doAction('StartStream');$('streamStopPage').onclick=()=>doAction('StopStream');$('recordStartPage').onclick=()=>doAction('StartRecord');$('recordStopPage').onclick=()=>doAction('StopRecord');$('audioMutePage').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,inputMuted:true});$('audioUnmutePage').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,inputMuted:false});
+$('copyHost').onclick=()=>{$('host').value=$('hostSettings').value.trim()||'ws://127.0.0.1:4455';document.querySelector('[data-page="dashboard"]').click()};
 $('createSrt').onclick=()=>ensureSrtSource().catch(e=>log(e.message));
 $('refreshSrt').onclick=refreshSrtSource;
 setButtons(false);log('KDR OBS Controller siap.');refreshSrtQr();
