@@ -68,7 +68,44 @@ button,input,select{font:inherit}button{border:0;border-radius:9px;padding:11px 
 
 <section class="page" id="page-audio"><h2 class="page-title">Audio</h2><p class="page-subtitle">Pilih dan kontrol input audio OBS.</p><div class="card"><h2>Audio Input</h2><div class="row"><select id="audioInput"><option value="Mic/Aux">Mic/Aux</option></select></div><div class="row"><button id="audioMutePage">🔇 Mute</button><button id="audioUnmutePage">🔊 Unmute</button></div></div></section>
 
-<section class="page" id="page-camera"><h2 class="page-title">KDR Camera</h2><p class="page-subtitle">Alur kamera HP menuju OBS.</p><div class="cards three"><div class="stat"><div class="label">Transport</div><div class="value">SRT → OBS</div></div><div class="stat"><div class="label">Receiver</div><div class="value">MPEGTS / FFmpeg</div></div><div class="stat"><div class="label">Port Default</div><div class="value">9000</div></div></div><div class="card" style="margin-top:18px"><h2>Alur</h2><p class="hint">KDR Camera Android → Scan QR → SRT → KDR OBS Controller → OBS Studio.</p></div></section>
+<section class="page" id="page-camera">
+<h2 class="page-title">KDR Camera</h2><p class="page-subtitle">Konfigurasi sumber kamera: KDR Network/LAN, SRT, atau HDMI Capture.</p>
+<div class="card">
+<h2>Mode Koneksi</h2>
+<div class="row">
+<select id="cameraMode"><option value="network">🌐 KDR Network (Wi-Fi / LAN / USB Network)</option><option value="srt">📡 SRT → OBS</option><option value="hdmi">🎞️ HDMI Capture (DirectShow)</option></select>
+</div>
+</div>
+<div class="cards" style="margin-top:18px">
+<div class="card" id="networkConfig">
+<h2>🌐 KDR Network / LAN</h2>
+<div class="row"><input id="cameraServer" value="http://127.0.0.1:8080" placeholder="KDR Server, contoh http://192.168.1.10:8080"><input id="cameraRoom" value="KDRCAM" placeholder="Room / Camera ID"></div>
+<div class="row"><input id="cameraPin" type="password" placeholder="PIN (optional)"><input id="cameraFps" type="number" value="30" min="1" max="60" placeholder="FPS"></div>
+<p class="hint">Mode ini memakai koneksi KDR Network melalui Wi-Fi/LAN/USB Network.</p>
+</div>
+<div class="card" id="srtConfig">
+<h2>📡 SRT → OBS</h2>
+<div class="row"><input id="cameraSrtUrl" value="srt://0.0.0.0:9000?mode=listener" placeholder="SRT URL"><input id="cameraSrtPort" type="number" value="9000" min="1" max="65535" placeholder="Port"></div>
+<p class="hint">Untuk KDR Camera Android, gunakan QR SRT pada menu SRT Receiver.</p>
+</div>
+<div class="card" id="hdmiConfig">
+<h2>🎞️ HDMI Capture / DirectShow</h2>
+<div class="row"><select id="hdmiDevice"><option value="">Pilih perangkat capture setelah plugin OBS terpasang</option></select></div>
+<div class="row"><select id="hdmiResolution"><option>1920 x 1080</option><option>1280 x 720</option><option>3840 x 2160</option></select><select id="hdmiFps"><option>30 FPS</option><option>60 FPS</option><option>25 FPS</option></select></div>
+<p class="hint">Perangkat HDMI Capture yang terdeteksi OBS/Windows akan tersedia di Properties sumber <b>KDR Camera</b>. Controller ini menyimpan preferensi, sedangkan pemilihan device DirectShow dilakukan oleh plugin OBS.</p>
+</div>
+</div>
+<div class="card" style="margin-top:18px">
+<h2>Konfigurasi Kamera</h2>
+<div class="cards three">
+<div class="stat"><div class="label">Mode</div><div class="value" id="cameraModeState">KDR Network</div></div>
+<div class="stat"><div class="label">Resolution</div><div class="value">1920 × 1080</div></div>
+<div class="stat"><div class="label">FPS</div><div class="value" id="cameraFpsState">30</div></div>
+</div>
+<div style="margin-top:14px"><button class="primary" id="saveCameraConfig">💾 Simpan Konfigurasi</button></div>
+</div>
+<div class="card" style="margin-top:18px"><h2>Alur</h2><p class="hint">KDR Camera Android → KDR Network / SRT → KDR OBS Controller → OBS Studio, atau HDMI Camera/Capture Card → OBS.</p></div>
+</section>
 
 <section class="page" id="page-settings"><h2 class="page-title">Pengaturan</h2><p class="page-subtitle">Koneksi OBS WebSocket dan informasi aplikasi.</p><div class="card"><h2>OBS WebSocket</h2><div class="row"><input id="hostSettings" placeholder="ws://127.0.0.1:4455"><button id="copyHost">Salin ke Dashboard</button></div><p class="hint">Port default OBS WebSocket adalah 4455.</p></div></section>
 
@@ -194,6 +231,22 @@ $('mute').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,i
 $('unmute').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,inputMuted:false});
 $('streamStartPage').onclick=()=>doAction('StartStream');$('streamStopPage').onclick=()=>doAction('StopStream');$('recordStartPage').onclick=()=>doAction('StartRecord');$('recordStopPage').onclick=()=>doAction('StopRecord');$('audioMutePage').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,inputMuted:true});$('audioUnmutePage').onclick=()=>doAction('SetInputMute',{inputName:$('audioInput').value,inputMuted:false});
 $('copyHost').onclick=()=>{$('host').value=$('hostSettings').value.trim()||'ws://127.0.0.1:4455';document.querySelector('[data-page="dashboard"]').click()};
+const cameraMode=$('cameraMode'),networkConfig=$('networkConfig'),srtConfig=$('srtConfig'),hdmiConfig=$('hdmiConfig');
+function updateCameraMode(){
+ const m=cameraMode.value;
+ networkConfig.style.display=m==='network'?'block':'none';
+ srtConfig.style.display=m==='srt'?'block':'none';
+ hdmiConfig.style.display=m==='hdmi'?'block':'none';
+ $('cameraModeState').textContent=m==='network'?'KDR Network / LAN':m==='srt'?'SRT → OBS':'HDMI Capture';
+}
+cameraMode.onchange=updateCameraMode;
+$('saveCameraConfig').onclick=()=>{
+ localStorage.setItem('kdrCameraConfig',JSON.stringify({mode:cameraMode.value,server:$('cameraServer').value,room:$('cameraRoom').value,pin:$('cameraPin').value,fps:$('cameraFps').value,srtUrl:$('cameraSrtUrl').value,srtPort:$('cameraSrtPort').value,resolution:$('hdmiResolution').value,hdmiFps:$('hdmiFps').value}));
+ $('cameraFpsState').textContent=$('cameraFps').value||'30';
+ log('Konfigurasi KDR Camera disimpan.');
+};
+try{const cfg=JSON.parse(localStorage.getItem('kdrCameraConfig')||'null');if(cfg){cameraMode.value=cfg.mode||'network';$('cameraServer').value=cfg.server||$('cameraServer').value;$('cameraRoom').value=cfg.room||$('cameraRoom').value;$('cameraPin').value=cfg.pin||'';$('cameraFps').value=cfg.fps||'30';$('cameraSrtUrl').value=cfg.srtUrl||$('cameraSrtUrl').value;$('cameraSrtPort').value=cfg.srtPort||'9000';$('hdmiResolution').value=cfg.resolution||'1920 x 1080';$('hdmiFps').value=cfg.hdmiFps||'30 FPS';}}catch{}
+updateCameraMode();
 $('createSrt').onclick=()=>ensureSrtSource().catch(e=>log(e.message));
 $('refreshSrt').onclick=refreshSrtSource;
 setButtons(false);log('KDR OBS Controller siap.');refreshSrtQr();
