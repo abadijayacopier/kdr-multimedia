@@ -1383,8 +1383,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           </div>
         </div>
 
-        {/* Native SRT controls */}
-        <div style={{ position: 'absolute', top: '0.85rem', right: '0.85rem', zIndex: 31 }}>
+        {/* Native SRT controls — Android only; keep browser/iPhone camera HUD clean */}
+        {nativeSrtAvailable && <div style={{ position: 'absolute', top: '0.85rem', right: '0.85rem', zIndex: 31 }}>
           <button type="button" onClick={() => setShowSrtPanel(v => !v)} aria-label="Buka pengaturan SRT" style={{ minWidth:'44px', height:'38px', padding:'0 0.7rem', borderRadius:'12px', border: srtRunning ? '1px solid rgba(255,70,70,0.45)' : '1px solid rgba(0,242,254,0.25)', background: srtRunning ? 'rgba(90,12,16,0.72)' : 'rgba(0,0,0,0.58)', color:'#fff', backdropFilter:'blur(14px)', boxShadow:'0 6px 18px rgba(0,0,0,0.2)', fontWeight:800, fontSize:'0.68rem', letterSpacing:'0.02em' }}>
             {srtRunning ? (srtReconnecting ? '🟠 SRT RETRY' : '🔴 SRT LIVE') : '📡 SRT'}
           </button>
@@ -1481,7 +1481,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
               </div>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Camera quick controls */}
         {(zoomSupported || focusSupported) && (
