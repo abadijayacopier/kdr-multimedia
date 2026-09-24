@@ -1100,6 +1100,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           <div className={`badge ${connectionMode === 'srt' ? (srtRunning ? 'badge-connected' : 'badge-disconnected') : (connected ? 'badge-connected' : 'badge-disconnected')}`} style={{ backdropFilter: 'blur(10px)' }}>
             <span className={`badge-dot ${(connectionMode === 'srt' ? srtRunning : connected) ? 'blink' : ''}`}></span>
             {connectionMode === 'srt' ? (srtReconnecting ? 'SRT RETRY' : (srtRunning ? 'SRT LIVE' : 'SRT READY')) : (connected ? 'ONLINE' : 'OFFLINE')}
+            <span style={{marginLeft:'0.6rem',fontSize:'0.72rem',fontWeight:700,color:batteryLevel !== null && batteryLevel <= 15 ? '#ff6b6b' : 'inherit'}}>{batteryIcon} {batteryLevel === null ? '--' : batteryLevel + '%'}{batteryCharging ? ' CHG' : ''}</span>
           </div>
         </div>
 
