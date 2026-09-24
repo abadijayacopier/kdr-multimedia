@@ -258,8 +258,47 @@ export default function App() {
 
   // Legacy KDR Network / WebRTC pairing.
   if (role === 'sender' && senderMode === 'network' && !roomId) {
+    const handleBackFromPairing = () => {
+      setSenderMode(null);
+      localStorage.removeItem('kdr_sender_mode');
+      const params = new URLSearchParams(window.location.search);
+      params.delete('mode');
+      params.delete('room');
+      params.delete('pin');
+      const query = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''));
+    };
     return (
-      <div style={{display:'flex',minHeight:'100vh',alignItems:'center',justifyContent:'center',backgroundColor:'#08090c',color:'#fff',padding:'1.5rem',boxSizing:'border-box'}}>
+      <div style={{position:'relative',display:'flex',minHeight:'100vh',alignItems:'center',justifyContent:'center',backgroundColor:'#08090c',color:'#fff',padding:'1.5rem',boxSizing:'border-box'}}>
+        <button
+          type="button"
+          onClick={handleBackFromPairing}
+          aria-label="Kembali"
+          title="Kembali"
+          style={{
+            position:'fixed',
+            top:'calc(1rem + env(safe-area-inset-top))',
+            left:'1rem',
+            zIndex:20,
+            width:'46px',
+            height:'46px',
+            borderRadius:'50%',
+            border:'1px solid rgba(255,255,255,0.16)',
+            background:'rgba(12,15,22,0.82)',
+            color:'#fff',
+            fontSize:'1.45rem',
+            lineHeight:1,
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            boxShadow:'0 8px 24px rgba(0,0,0,0.35)',
+            backdropFilter:'blur(12px)',
+            WebkitBackdropFilter:'blur(12px)',
+            cursor:'pointer'
+          }}
+        >
+          ‹
+        </button>
         <div className="glass-panel" style={{padding:'2rem',width:'100%',maxWidth:'400px',textAlign:'center'}}>
           <div style={{fontSize:'3rem',marginBottom:'1rem'}}>📹</div>
           <h2 className="gradient-text glow-text" style={{fontSize:'1.6rem',marginBottom:'0.5rem'}}>KDR Multimedia</h2>
