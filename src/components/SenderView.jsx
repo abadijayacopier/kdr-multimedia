@@ -20,6 +20,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const [exposureSupported, setExposureSupported] = useState(false);
   const [exposureRange, setExposureRange] = useState({ min: -2, max: 2, step: 0.1 });
   const [exposureValue, setExposureValue] = useState(0);
+  const [focusLockSupported, setFocusLockSupported] = useState(false);
+  const [focusLocked, setFocusLocked] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
   // New features
@@ -822,6 +824,24 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
     }
   };
 
+  // Lock/unlock focus when the camera exposes a manual focus mode.
+  const toggleFocusLock = async () => {
+    if (!streamRef.current || !focusLockSupported) return;
+    const track = streamRef.current.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      const nextLocked = !focusLocked;
+      await track.applyConstraints({ advanced: [{ focusMode: nextLocked ? 'manual' : 'continuous' }] });
+      setFocusLocked(nextLocked);
+      setCurrentFocusMode(nextLocked ? 'manual' : (focusModes.includes('continuous') ? 'continuous' : focusModes[0] || 'continuous'));
+      setStatus(nextLocked ? 'FOCUS LOCK aktif' : 'FOCUS AUTO aktif');
+    } catch (err) {
+      console.error('Error toggling focus lock:', err);
+    }
+  };
+
+  const resetExposure = () => applyExposure(0);
+
   // Pause / Play control
   const applyPause = async (shouldPause) => {
     setIsPaused(shouldPause);
@@ -942,6 +962,9 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             await track.applyConstraints({ advanced: [{ focusMode: defFocus }] });
           } catch(e) {}
         }
+        const canManualFocus = hasFocus && Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes('manual');
+        setFocusLockSupported(canManualFocus);
+        setFocusLocked(false);
 
         // Report to receiver
         sendCapabilities(capabilities);
@@ -1404,6 +1427,14 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             </div>
           </div>
         </div>
+
+        {/* Focus / exposure lock HUD */}
+        {(focusLockSupported || exposureSupported) && !srtRunning && (
+          <div style={{position:'absolute',left:'0.85rem',bottom:'14.9rem',zIndex:20,display:'flex',alignItems:'center',gap:'0.35rem',padding:'0.28rem 0.35rem',borderRadius:'999px',background:'rgba(5,7,10,0.62)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(12px)',boxShadow:'0 8px 24px rgba(0,0,0,0.24)'}}>
+            {focusLockSupported && <button type="button" onClick={toggleFocusLock} className="kdr-lens-pill kdr-tap" style={{height:'30px',padding:'0 0.62rem',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'999px',background:focusLocked?'rgba(255,185,60,0.2)':'rgba(255,255,255,0.08)',color:focusLocked?'#ffd45a':'#fff',fontSize:'0.58rem',fontWeight:800,fontFamily:'monospace'}}>{focusLocked?'🔒 FOCUS LOCK':'🎯 FOCUS AUTO'}</button>}
+            {exposureSupported && <button type="button" onClick={resetExposure} className="kdr-lens-pill kdr-tap" style={{height:'30px',padding:'0 0.62rem',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'999px',background:Math.abs(exposureValue)>0.01?'rgba(0,242,254,0.14)':'rgba(255,255,255,0.08)',color:'#fff',fontSize:'0.58rem',fontWeight:800,fontFamily:'monospace'}}>EV {exposureValue>0?'+':''}{Number(exposureValue).toFixed(1)} • RESET</button>}
+          </div>
+        )}
 
         {/* Professional camera control HUD */}
         {(exposureSupported || torchSupported) && !srtRunning && (
