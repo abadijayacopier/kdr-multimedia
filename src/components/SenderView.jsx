@@ -17,6 +17,9 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const [focusSupported, setFocusSupported] = useState(false);
   const [focusModes, setFocusModes] = useState([]);
   const [currentFocusMode, setCurrentFocusMode] = useState('continuous');
+  const [exposureSupported, setExposureSupported] = useState(false);
+  const [exposureRange, setExposureRange] = useState({ min: -2, max: 2, step: 0.1 });
+  const [exposureValue, setExposureValue] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
   // New features
@@ -805,6 +808,20 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
     }
   };
 
+  // Exposure compensation control (only when the camera exposes this capability)
+  const applyExposure = async (val) => {
+    if (!streamRef.current || !exposureSupported) return;
+    const track = streamRef.current.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      const floatVal = parseFloat(val);
+      await track.applyConstraints({ advanced: [{ exposureCompensation: floatVal }] });
+      setExposureValue(floatVal);
+    } catch (err) {
+      console.error('Error applying exposure compensation:', err);
+    }
+  };
+
   // Pause / Play control
   const applyPause = async (shouldPause) => {
     setIsPaused(shouldPause);
@@ -895,6 +912,23 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           try {
             await track.applyConstraints({ advanced: [{ zoom: defZoom }] });
           } catch(e) {}
+        }
+
+        // Exposure compensation
+        const hasExposure = !!capabilities.exposureCompensation;
+        setExposureSupported(hasExposure);
+        if (hasExposure) {
+          setExposureRange({
+            min: capabilities.exposureCompensation.min ?? -2,
+            max: capabilities.exposureCompensation.max ?? 2,
+            step: capabilities.exposureCompensation.step ?? 0.1
+          });
+          const defExposure = Math.max(
+            capabilities.exposureCompensation.min ?? -2,
+            Math.min(exposureValue, capabilities.exposureCompensation.max ?? 2)
+          );
+          setExposureValue(defExposure);
+          try { await track.applyConstraints({ advanced: [{ exposureCompensation: defExposure }] }); } catch (_) {}
         }
 
         // Focus Mode
@@ -1370,6 +1404,22 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             </div>
           </div>
         </div>
+
+        {/* Professional camera control HUD */}
+        {(exposureSupported || torchSupported) && !srtRunning && (
+          <div style={{position:'absolute',right:'0.85rem',bottom:'14.9rem',zIndex:20,display:'flex',alignItems:'center',gap:'0.35rem',padding:'0.28rem 0.35rem',borderRadius:'999px',background:'rgba(5,7,10,0.62)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(12px)',boxShadow:'0 8px 24px rgba(0,0,0,0.24)'}}>
+            {exposureSupported && (
+              <div style={{display:'flex',alignItems:'center',gap:'0.25rem',padding:'0 0.25rem'}}>
+                <span style={{fontSize:'0.55rem',fontFamily:'monospace',color:'rgba(255,255,255,0.5)'}}>EV</span>
+                <input aria-label="Exposure compensation" type="range" min={exposureRange.min} max={exposureRange.max} step={exposureRange.step} value={exposureValue} onChange={e=>applyExposure(e.target.value)} style={{width:'72px',accentColor:'#00f2fe'}} />
+                <span style={{minWidth:'30px',fontSize:'0.58rem',fontFamily:'monospace',color:'#fff',textAlign:'right'}}>{exposureValue>0?'+':''}{Number(exposureValue).toFixed(1)}</span>
+              </div>
+            )}
+            {torchSupported && (
+              <button type="button" onClick={()=>setFlashlight(!torchOn)} className="kdr-lens-pill kdr-tap" style={{width:'31px',height:'30px',padding:0,border:0,borderRadius:'50%',background:torchOn?'rgba(255,205,70,0.22)':'rgba(255,255,255,0.08)',color:torchOn?'#ffd45a':'rgba(255,255,255,0.72)',fontSize:'0.78rem'}} title={torchOn?'Matikan lampu':'Nyalakan lampu'}>🔦</button>
+            )}
+          </div>
+        )}
 
         {/* Professional lens HUD */}
         {(zoomSupported || focusSupported) && !srtRunning && (
