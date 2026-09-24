@@ -1217,9 +1217,16 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   return (
     <div className="mobile-view" style={isTallyActive ? { border: '6px solid red', boxSizing: 'border-box' } : {}}>
       {isTallyActive && (
-        <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'red', color: 'white', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', zIndex: 999, animation: 'blink 1s infinite alternate', boxShadow: '0 0 10px rgba(255,0,0,0.8)' }}>
-          🔴 LIVE
-        </div>
+        <>
+          <div style={{position:'absolute',inset:'8px',border:'2px solid rgba(255,40,40,0.9)',borderRadius:'12px',pointerEvents:'none',zIndex:998,boxShadow:'inset 0 0 22px rgba(255,0,0,0.18), 0 0 12px rgba(255,0,0,0.22)'}} />
+          <div style={{position:'absolute',top:'14px',right:'14px',display:'flex',alignItems:'center',gap:'0.42rem',background:'rgba(120,0,0,0.78)',color:'#fff',padding:'0.42rem 0.68rem',borderRadius:'999px',fontWeight:900,fontSize:'0.68rem',letterSpacing:'0.06em',zIndex:999,animation:'blink 1s infinite alternate',boxShadow:'0 0 16px rgba(255,0,0,0.55)',backdropFilter:'blur(8px)'}}>
+            <span style={{width:8,height:8,borderRadius:'50%',background:'#ff3030',boxShadow:'0 0 8px #ff3030'}} />
+            PROGRAM LIVE
+          </div>
+          <div style={{position:'absolute',top:'14px',left:'14px',padding:'0.35rem 0.55rem',borderRadius:'8px',background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.1)',color:'rgba(255,255,255,0.86)',fontFamily:'monospace',fontSize:'0.56rem',zIndex:999}}>
+            TALLY • ON AIR
+          </div>
+        </>
       )}
       {/* Camera Live Preview on phone screen */}
       <video
