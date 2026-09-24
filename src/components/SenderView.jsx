@@ -1146,7 +1146,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
                   </div>
                   <div>
                     <div style={{fontSize:'0.68rem',color:'var(--text-secondary)',marginBottom:'0.25rem'}}>AUDIO</div>
-                    <button type="button" className={`btn ${isAudioEnabled ? 'btn-primary' : 'btn-secondary'}`} style={{width:'100%',padding:'0.7rem'}} onClick={()=>{const next=!isAudioEnabled;setIsAudioEnabled(next);}} disabled={srtRunning}>{isAudioEnabled?'🎙️ AUDIO ON':'🔇 AUDIO OFF'}</button>
+                    <button type="button" className={`btn ${isAudioEnabled ? 'btn-primary' : 'btn-secondary'}`} style={{width:'100%',padding:'0.7rem'}} onClick={async()=>{const next=!isAudioEnabled;setIsAudioEnabled(next);if(!srtRunning){try{await setupCamera(activeCamera,activeResolution,activeFps,next);}catch(_){} }}} disabled={srtRunning}>{isAudioEnabled?'🎙️ AUDIO ON':'🔇 AUDIO OFF'}</button>
                   </div>
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{activeResolution.toUpperCase()} • {activeFps} FPS • {Math.round(Number(srtBitrate) / 1000000)} Mbps • Audio {isAudioEnabled ? 'ON' : 'OFF'}</div>
