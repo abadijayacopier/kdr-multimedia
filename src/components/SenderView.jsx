@@ -1248,6 +1248,22 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           </div>
         </div>
 
+        {/* Primary LIVE control */}
+        {connectionMode === 'srt' && (
+          <div style={{position:'absolute',bottom:'11.9rem',left:'50%',transform:'translateX(-50%)',zIndex:20}}>
+            <button type="button" onClick={srtRunning ? stopNativeSrt : startNativeSrt} disabled={srtReconnecting}
+              style={{minWidth:'150px',height:'48px',padding:'0 1.1rem',borderRadius:'24px',border:'2px solid rgba(255,255,255,0.22)',background:srtRunning ? 'rgba(190,35,35,0.92)' : 'rgba(18,18,22,0.88)',color:'#fff',fontWeight:900,fontSize:'0.86rem',letterSpacing:'0.04em',boxShadow:srtRunning ? '0 0 22px rgba(255,60,60,0.32)' : '0 8px 24px rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',opacity:srtReconnecting?0.65:1}}>
+              <span style={{display:'inline-flex',alignItems:'center',gap:'0.45rem'}}>
+                <span style={{width:10,height:10,borderRadius:'50%',background:srtRunning?'#ff4d4d':'#fff',boxShadow:srtRunning?'0 0 10px #ff4d4d':'none'}} />
+                {srtRunning ? (srtReconnecting ? 'RECONNECTING' : 'STOP LIVE') : 'START LIVE'}
+              </span>
+            </button>
+            <div style={{textAlign:'center',marginTop:'0.28rem',fontSize:'0.62rem',color:'rgba(255,255,255,0.68)',fontFamily:'monospace'}}>
+              {srtRunning ? (String(Math.floor(srtRuntime/60000)).padStart(2,'0') + ':' + String(Math.floor((srtRuntime/1000)%60)).padStart(2,'0') + ' • ' + Math.round(Number(srtBitrate)/1000000) + ' Mbps') : 'SRT → OBS'}
+            </div>
+          </div>
+        )}
+
         {/* Bottom controls */}
         <div className="mobile-footer">
           {/* Active stats */}
