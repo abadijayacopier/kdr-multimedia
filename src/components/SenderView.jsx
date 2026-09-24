@@ -166,7 +166,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
       audioFrameRef.current = null;
       audioAnalyserRef.current = null;
     };
-  }, [isAudioEnabled, streamRef.current]);
+  }, [isAudioEnabled, activeCamera, activeResolution]);
 
   useEffect(() => () => {
     if (audioFrameRef.current) cancelAnimationFrame(audioFrameRef.current);
