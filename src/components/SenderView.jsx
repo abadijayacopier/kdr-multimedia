@@ -1246,6 +1246,35 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           </div>
         )}
 
+        {/* Broadcast camera HUD */}
+        <div className="kdr-camera-hud" aria-hidden="true">
+          <div className="kdr-grid-v kdr-grid-v-left" />
+          <div className="kdr-grid-v kdr-grid-v-right" />
+          <div className="kdr-grid-h kdr-grid-h-top" />
+          <div className="kdr-grid-h kdr-grid-h-bottom" />
+          <div className="kdr-safe-frame" />
+          <div className="kdr-center-reticle"><span /><i /></div>
+          <div className="kdr-corner kdr-corner-tl" />
+          <div className="kdr-corner kdr-corner-tr" />
+          <div className="kdr-corner kdr-corner-bl" />
+          <div className="kdr-corner kdr-corner-br" />
+        </div>
+
+        <div style={{position:'absolute',top:'1rem',left:'0.85rem',right:'0.85rem',zIndex:18,display:'flex',justifyContent:'space-between',alignItems:'flex-start',pointerEvents:'none'}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:'0.4rem',padding:'0.28rem 0.48rem',borderRadius:'9px',background:'rgba(0,0,0,0.42)',border:'1px solid rgba(255,255,255,0.09)',backdropFilter:'blur(8px)',fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.76)'}}>
+            <span style={{width:6,height:6,borderRadius:'50%',background:srtRunning?'#ff3b3b':'#00f2fe',boxShadow:srtRunning?'0 0 9px #ff3b3b':'0 0 7px #00f2fe'}} />
+            {srtRunning ? 'ON AIR' : 'CAMERA READY'}
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'0.4rem'}}>
+            <div style={{padding:'0.28rem 0.48rem',borderRadius:'9px',background:'rgba(0,0,0,0.42)',border:'1px solid rgba(255,255,255,0.09)',backdropFilter:'blur(8px)',fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.76)'}}>
+              {activeResolution.toUpperCase()} • {activeFps}P
+            </div>
+            <div style={{padding:'0.28rem 0.48rem',borderRadius:'9px',background:'rgba(0,0,0,0.42)',border:'1px solid rgba(255,255,255,0.09)',backdropFilter:'blur(8px)',fontSize:'0.58rem',fontFamily:'monospace',color:'#fff'}}>
+              {batteryIcon} {batteryLevel === null ? '--' : batteryLevel + '%'}
+            </div>
+          </div>
+        </div>
+
         {/* Center status message */}
         <div style={{ alignSelf: 'center', width: '100%', display: 'flex', justifyContent: 'center' }}>
           <div className="mobile-status-toast">
@@ -1277,6 +1306,25 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           .kdr-settings-sheet { animation:kdrSheetIn .18s ease-out; }
           .kdr-tap { transition:transform .12s ease, opacity .12s ease; }
           .kdr-tap:active { transform:scale(.96); opacity:.88; }
+          .kdr-camera-hud { position:absolute; inset:0; z-index:14; pointer-events:none; overflow:hidden; }
+          .kdr-grid-v,.kdr-grid-h { position:absolute; background:rgba(255,255,255,0.13); }
+          .kdr-grid-v { top:0; bottom:0; width:1px; }
+          .kdr-grid-v-left { left:33.333%; }
+          .kdr-grid-v-right { left:66.666%; }
+          .kdr-grid-h { left:0; right:0; height:1px; }
+          .kdr-grid-h-top { top:33.333%; }
+          .kdr-grid-h-bottom { top:66.666%; }
+          .kdr-safe-frame { position:absolute; inset:9%; border:1px solid rgba(255,255,255,0.1); border-radius:10px; }
+          .kdr-center-reticle { position:absolute; left:50%; top:50%; width:28px; height:28px; transform:translate(-50%,-50%); opacity:.55; }
+          .kdr-center-reticle:before,.kdr-center-reticle:after { content:''; position:absolute; background:rgba(255,255,255,0.8); }
+          .kdr-center-reticle:before { width:28px; height:1px; top:13px; left:0; }
+          .kdr-center-reticle:after { width:1px; height:28px; top:0; left:13px; }
+          .kdr-center-reticle span { position:absolute; inset:8px; border:1px solid rgba(255,255,255,0.8); border-radius:50%; }
+          .kdr-corner { position:absolute; width:22px; height:22px; border-color:rgba(255,255,255,0.55); }
+          .kdr-corner-tl { top:8%; left:5%; border-top:2px solid; border-left:2px solid; border-radius:4px 0 0 0; }
+          .kdr-corner-tr { top:8%; right:5%; border-top:2px solid; border-right:2px solid; border-radius:0 4px 0 0; }
+          .kdr-corner-bl { bottom:8%; left:5%; border-bottom:2px solid; border-left:2px solid; border-radius:0 0 0 4px; }
+          .kdr-corner-br { bottom:8%; right:5%; border-bottom:2px solid; border-right:2px solid; border-radius:0 0 4px 0; }
           .kdr-live-badge { animation:kdrLiveIn .2s ease-out; }
           @keyframes kdrLiveIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
         `}</style>
