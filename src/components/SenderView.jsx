@@ -1223,6 +1223,24 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           )}
         </div>
 
+        {/* Camera quick controls */}
+        {(zoomSupported || focusSupported) && (
+          <div style={{position:'absolute',left:'50%',transform:'translateX(-50%)',bottom:'8.9rem',zIndex:18,display:'flex',alignItems:'center',gap:'0.45rem',padding:'0.4rem 0.55rem',borderRadius:'14px',background:'rgba(0,0,0,0.58)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.12)'}}>
+            {zoomSupported && (
+              <>
+                <button type="button" onClick={()=>applyZoom(Math.max(zoomRange.min, zoomValue-zoomRange.step))} style={{width:32,height:32,border:0,borderRadius:10,background:'rgba(255,255,255,0.12)',color:'#fff',fontSize:'1.1rem'}}>−</button>
+                <div style={{minWidth:44,textAlign:'center',fontSize:'0.72rem',fontWeight:800,color:'#fff'}}>{zoomValue.toFixed(1)}×</div>
+                <button type="button" onClick={()=>applyZoom(Math.min(zoomRange.max, zoomValue+zoomRange.step))} style={{width:32,height:32,border:0,borderRadius:10,background:'rgba(255,255,255,0.12)',color:'#fff',fontSize:'1.1rem'}}>+</button>
+              </>
+            )}
+            {focusSupported && (
+              <select value={currentFocusMode} onChange={e=>applyFocusMode(e.target.value)} style={{height:32,maxWidth:115,borderRadius:10,border:'1px solid rgba(255,255,255,0.14)',background:'rgba(0,0,0,0.45)',color:'#fff',padding:'0 0.4rem',fontSize:'0.68rem'}}>
+                {focusModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+              </select>
+            )}
+          </div>
+        )}
+
         {/* Center status message */}
         <div style={{ alignSelf: 'center', width: '100%', display: 'flex', justifyContent: 'center' }}>
           <div className="mobile-status-toast">
@@ -1311,8 +1329,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             </button>
           </div>
 
-          <span style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: '0.2rem' }}>
-            Dev: supriyanto abadi jaya
+          <span style={{ fontSize: '0.62rem', color: 'rgba(255, 255, 255, 0.28)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '0.15rem' }}>
+            KDR MULTIMEDIA • CAMERA
           </span>
         </div>
       </div>
