@@ -31,6 +31,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const [audioLevel, setAudioLevel] = useState(0);
   const [audioPeak, setAudioPeak] = useState(0);
   const [srtRunning, setSrtRunning] = useState(false);
+  const [frameCount, setFrameCount] = useState(0);
+  const frameRef = useRef({ last: 0, count: 0 });
   const [srtReconnecting, setSrtReconnecting] = useState(false);
   const [srtError, setSrtError] = useState(null);
   const [srtReconnectAttempt, setSrtReconnectAttempt] = useState(0);
@@ -172,6 +174,39 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
     if (audioFrameRef.current) cancelAnimationFrame(audioFrameRef.current);
     if (audioContextRef.current) audioContextRef.current.close().catch(() => {});
   }, []);
+
+  const formatTimecode = (ms) => {
+    const total = Math.floor(Math.max(0, ms) / 1000);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
+  };
+
+  useEffect(() => {
+    if (!srtRunning) {
+      setFrameCount(0);
+      return undefined;
+    }
+    let raf = 0;
+    const tick = (now) => {
+      const state = frameRef.current;
+      if (!state.last) state.last = now;
+      const interval = 1000 / Math.max(1, activeFps || 30);
+      if (now - state.last >= interval) {
+        const steps = Math.floor((now - state.last) / interval);
+        state.count += steps;
+        state.last += steps * interval;
+        setFrameCount(state.count);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      frameRef.current = { last: 0, count: 0 };
+    };
+  }, [srtRunning, activeFps]);
 
   const formatSrtDuration = (ms) => {
     const total = Math.floor(Math.max(0, ms) / 1000);
@@ -1333,6 +1368,18 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             <div style={{padding:'0.28rem 0.48rem',borderRadius:'9px',background:'rgba(0,0,0,0.42)',border:'1px solid rgba(255,255,255,0.09)',backdropFilter:'blur(8px)',fontSize:'0.58rem',fontFamily:'monospace',color:'#fff'}}>
               {batteryIcon} {batteryLevel === null ? '--' : batteryLevel + '%'}
             </div>
+          </div>
+        </div>
+
+        {/* Broadcast REC / timecode HUD */}
+        <div style={{position:'absolute',right:'0.85rem',bottom:'10.75rem',zIndex:19,pointerEvents:'none',display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.35rem'}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:'0.42rem',padding:'0.36rem 0.58rem',borderRadius:'10px',background:'rgba(0,0,0,0.52)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(10px)',fontFamily:'monospace',fontSize:'0.62rem',color:'#fff'}}>
+            <span style={{width:7,height:7,borderRadius:'50%',background:srtRunning?'#ff3030':'rgba(255,255,255,0.3)',boxShadow:srtRunning?'0 0 9px #ff3030':'none',animation:srtRunning?'kdrPulse 1s infinite':'none'}} />
+            <strong>{srtRunning ? 'REC' : 'READY'}</strong>
+          </div>
+          <div style={{display:'flex',gap:'0.35rem'}}>
+            <span style={{padding:'0.3rem 0.48rem',borderRadius:'9px',background:'rgba(0,0,0,0.48)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(8px)',fontFamily:'monospace',fontSize:'0.58rem',color:'rgba(255,255,255,0.78)'}}>TC {formatTimecode(srtRuntime)}</span>
+            <span style={{padding:'0.3rem 0.48rem',borderRadius:'9px',background:'rgba(0,0,0,0.48)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(8px)',fontFamily:'monospace',fontSize:'0.58rem',color:'rgba(255,255,255,0.78)'}}>F {frameCount}</span>
           </div>
         </div>
 
