@@ -74,20 +74,30 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   });
   const [activeSrtProfile, setActiveSrtProfile] = useState(() => localStorage.getItem('kdr_srt_active_profile') || '');
   const [newSrtProfileName, setNewSrtProfileName] = useState('');
+  const showSettingsRef = useRef(false);
+  const showSrtPanelRef = useRef(false);
 
   // Android/WebView back: close the current sheet first, then return to
   // the transport selector instead of allowing the app to exit.
+  useEffect(() => {
+    showSettingsRef.current = showSettings;
+  }, [showSettings]);
+
+  useEffect(() => {
+    showSrtPanelRef.current = showSrtPanel;
+  }, [showSrtPanel]);
+
   useEffect(() => {
     if (!onBackToModeSelector) return undefined;
     const historyMarker = 'kdr-sender-mode';
     window.history.pushState({ kdrSender: historyMarker }, '', window.location.href);
     const handlePopState = () => {
-      if (showSettings) {
+      if (showSettingsRef.current) {
         setShowSettings(false);
         window.history.pushState({ kdrSender: historyMarker }, '', window.location.href);
         return;
       }
-      if (showSrtPanel) {
+      if (showSrtPanelRef.current) {
         setShowSrtPanel(false);
         window.history.pushState({ kdrSender: historyMarker }, '', window.location.href);
         return;
@@ -96,7 +106,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [onBackToModeSelector, showSettings, showSrtPanel]);
+  }, []);
 
   useEffect(() => {
     let battery = null;
@@ -1252,6 +1262,16 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
 
   return (
     <div className="mobile-view" style={isTallyActive ? { border: '6px solid red', boxSizing: 'border-box' } : {}}>
+      {onBackToModeSelector && (
+        <button
+          type="button"
+          onClick={onBackToModeSelector}
+          aria-label="Kembali ke pilihan koneksi"
+          style={{position:'absolute',top:'0.85rem',left:'0.85rem',zIndex:1002,width:42,height:42,borderRadius:'50%',border:'1px solid rgba(255,255,255,0.16)',background:'rgba(5,7,10,0.72)',color:'#fff',fontSize:'1.35rem',lineHeight:1,backdropFilter:'blur(10px)',boxShadow:'0 8px 24px rgba(0,0,0,0.35)'}}
+        >
+          ‹
+        </button>
+      )}
       {isTallyActive && (
         <>
           <div style={{position:'absolute',inset:'8px',border:'2px solid rgba(255,40,40,0.9)',borderRadius:'12px',pointerEvents:'none',zIndex:998,boxShadow:'inset 0 0 22px rgba(255,0,0,0.18), 0 0 12px rgba(255,0,0,0.22)'}} />
