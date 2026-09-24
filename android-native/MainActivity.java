@@ -6,10 +6,6 @@ import android.os.Bundle;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
 import com.getcapacitor.BridgeActivity;
 import com.kdrmultimedia.camera.srt.KdrSrtPlugin;
 
@@ -43,9 +39,9 @@ public class MainActivity extends BridgeActivity {
         }
 
         boolean cameraGranted = !needsCamera ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+                checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
         boolean audioGranted = !needsAudio ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+                checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
 
         if (cameraGranted && audioGranted) {
             request.grant(resources);
@@ -53,12 +49,12 @@ public class MainActivity extends BridgeActivity {
         }
 
         pendingWebPermissionRequest = request;
+
         java.util.ArrayList<String> permissions = new java.util.ArrayList<>();
         if (needsCamera && !cameraGranted) permissions.add(Manifest.permission.CAMERA);
         if (needsAudio && !audioGranted) permissions.add(Manifest.permission.RECORD_AUDIO);
 
-        ActivityCompat.requestPermissions(
-                this,
+        requestPermissions(
                 permissions.toArray(new String[0]),
                 WEB_PERMISSION_REQUEST
         );
@@ -67,8 +63,8 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
-            @NonNull String[] permissions,
-            @NonNull int[] grantResults
+            String[] permissions,
+            int[] grantResults
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
@@ -77,7 +73,7 @@ public class MainActivity extends BridgeActivity {
         PermissionRequest request = pendingWebPermissionRequest;
         pendingWebPermissionRequest = null;
 
-        boolean allGranted = true;
+        boolean allGranted = grantResults.length > 0;
         for (int result : grantResults) {
             if (result != PackageManager.PERMISSION_GRANTED) {
                 allGranted = false;
