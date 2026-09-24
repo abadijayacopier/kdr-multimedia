@@ -35,6 +35,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const [srtStartedAt, setSrtStartedAt] = useState(0);
   const [srtRuntime, setSrtRuntime] = useState(0);
   const [showSrtPanel, setShowSrtPanel] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [srtEndpoint, setSrtEndpoint] = useState(() => localStorage.getItem('kdr_srt_endpoint') || 'srt://192.168.1.100:9000');
   const [srtStreamId, setSrtStreamId] = useState(() => localStorage.getItem('kdr_srt_stream_id') || `kdr-${roomId}`);
   const [srtLatency, setSrtLatency] = useState(() => Number(localStorage.getItem('kdr_srt_latency') || 120));
@@ -1265,6 +1266,28 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           @keyframes kdrPulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.45; transform:scale(.82); } }
         `}</style>
 
+        {/* Camera settings bottom sheet */}
+        {showSettings && (
+          <div style={{position:'absolute',left:'0.7rem',right:'0.7rem',bottom:'7.2rem',zIndex:30,maxHeight:'58vh',overflowY:'auto',padding:'0.9rem',borderRadius:'18px',background:'rgba(8,9,12,0.96)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(18px)',boxShadow:'0 18px 50px rgba(0,0,0,0.45)'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.7rem'}}>
+              <div><div style={{fontWeight:900,color:'#fff'}}>⚙️ PENGATURAN KAMERA</div><div style={{fontSize:'0.65rem',color:'rgba(255,255,255,0.48)',marginTop:'0.15rem'}}>Pengaturan cepat • tersimpan otomatis</div></div>
+              <button type="button" onClick={()=>setShowSettings(false)} style={{width:34,height:34,border:0,borderRadius:12,background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'1rem'}}>✕</button>
+            </div>
+            <div style={{display:'grid',gap:'0.65rem'}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem'}}>
+                <div><div style={{fontSize:'0.65rem',color:'rgba(255,255,255,0.5)',marginBottom:'0.25rem'}}>KAMERA</div><select className="control-select" value={activeCamera} onChange={e=>{setActiveCamera(e.target.value);setupCamera(e.target.value,activeResolution,activeFps,isAudioEnabled)}} disabled={srtRunning}><option value="environment">BELAKANG</option><option value="user">DEPAN</option>{connectionMode!=='srt'&&<option value="screen">LAYAR</option>}</select></div>
+                <div><div style={{fontSize:'0.65rem',color:'rgba(255,255,255,0.5)',marginBottom:'0.25rem'}}>RESOLUSI</div><select className="control-select" value={activeResolution} onChange={e=>{setActiveResolution(e.target.value);setupCamera(activeCamera,e.target.value,activeFps,isAudioEnabled)}} disabled={srtRunning}><option value="720p">720p HD</option><option value="1080p">1080p FHD</option><option value="4k">4K UHD</option></select></div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem'}}>
+                <div><div style={{fontSize:'0.65rem',color:'rgba(255,255,255,0.5)',marginBottom:'0.25rem'}}>FRAME RATE</div><select className="control-select" value={activeFps} onChange={e=>{const v=Number(e.target.value);setActiveFps(v);localStorage.setItem('kdr_camera_fps',String(v));setupCamera(activeCamera,activeResolution,v,isAudioEnabled)}} disabled={srtRunning}><option value="24">24 FPS</option><option value="30">30 FPS</option><option value="60">60 FPS</option></select></div>
+                <div><div style={{fontSize:'0.65rem',color:'rgba(255,255,255,0.5)',marginBottom:'0.25rem'}}>KUALITAS</div><select className="control-select" value={qualityPreset} onChange={e=>applyQualityPreset(e.target.value)} disabled={srtRunning}>{Object.entries(qualityPresets).map(([key,p])=><option key={key} value={key}>{p.label}</option>)}</select></div>
+              </div>
+              <button type="button" className={`btn ${isAudioEnabled?'btn-primary':'btn-secondary'}`} onClick={async()=>{const next=!isAudioEnabled;setIsAudioEnabled(next);if(!srtRunning){try{await setupCamera(activeCamera,activeResolution,activeFps,next)}catch(_){} }}} disabled={srtRunning}>{isAudioEnabled?'🎙️ AUDIO ON':'🔇 AUDIO OFF'}</button>
+              {zoomSupported && <div><div style={{fontSize:'0.65rem',color:'rgba(255,255,255,0.5)',marginBottom:'0.25rem'}}>ZOOM • {zoomValue.toFixed(1)}×</div><input type="range" min={zoomRange.min} max={zoomRange.max} step={zoomRange.step} value={zoomValue} onChange={e=>applyZoom(e.target.value)} style={{width:'100%'}} /></div>}
+            </div>
+          </div>
+        )}
+
         {/* Primary LIVE control */}
         {connectionMode === 'srt' && (
           <div style={{position:'absolute',bottom:'11.9rem',left:'50%',transform:'translateX(-50%)',zIndex:20}}>
@@ -1291,7 +1314,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             <div>NET: {networkType}</div>
           </div>
 
-          <div style={{display:'flex',gap:'0.55rem',alignItems:'center',justifyContent:'center',width:'100%',padding:'0.28rem 0.4rem',borderRadius:'22px',background:'rgba(0,0,0,0.34)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(10px)'}}>
+          <div style={{display:'flex',gap:'0.55rem',alignItems:'center',justifyContent:'center',width:'100%',padding:'0.28rem 0.4rem',borderRadius:'22px',background:'rgba(0,0,0,0.34)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(10px)'}}>            <button type="button" onClick={()=>setShowSettings(v=>!v)} className="mobile-btn-circle" title="Pengaturan" style={{width:'48px',height:'48px',background:showSettings?'rgba(0,242,254,0.2)':'rgba(255,255,255,0.12)'}}><span style={{fontSize:'1.2rem'}}>⚙️</span></button>
             <button
               onClick={() => {
                 const nextAudio = !isAudioEnabled;
