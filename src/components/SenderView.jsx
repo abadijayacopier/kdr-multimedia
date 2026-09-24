@@ -1306,7 +1306,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           type="button"
           onClick={onBackToModeSelector}
           aria-label="Kembali ke pilihan koneksi"
-          style={{position:'absolute',top:'0.85rem',left:'0.85rem',zIndex:1002,width:42,height:42,borderRadius:'50%',border:'1px solid rgba(255,255,255,0.16)',background:'rgba(5,7,10,0.72)',color:'#fff',fontSize:'1.35rem',lineHeight:1,backdropFilter:'blur(10px)',boxShadow:'0 8px 24px rgba(0,0,0,0.35)'}}
+          style={{position:'absolute',top:'max(0.65rem, env(safe-area-inset-top))',left:'max(0.65rem, env(safe-area-inset-left))',zIndex:1002,width:40,height:40,borderRadius:'50%',border:'1px solid rgba(255,255,255,0.18)',background:'rgba(5,7,10,0.78)',color:'#fff',fontSize:'1.25rem',lineHeight:1,backdropFilter:'blur(12px)',boxShadow:'0 8px 24px rgba(0,0,0,0.38)'}}
         >
           ‹
         </button>
@@ -1362,7 +1362,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
       {/* Floating UI Overlays */}
       <div className="mobile-overlay">
         {/* Top Header */}
-        <div className="mobile-header">
+        <div className="mobile-header" style={{paddingLeft:'3.35rem',paddingRight:'0.85rem',boxSizing:'border-box',gap:'0.45rem'}}>
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <span style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
               📹 KDR Multimedia
@@ -1384,12 +1384,12 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         </div>
 
         {/* Native SRT controls — Android only; keep browser/iPhone camera HUD clean */}
-        {nativeSrtAvailable && <div style={{ position: 'absolute', top: '0.85rem', right: '0.85rem', zIndex: 31 }}>
-          <button type="button" onClick={() => setShowSrtPanel(v => !v)} aria-label="Buka pengaturan SRT" style={{ minWidth:'44px', height:'38px', padding:'0 0.7rem', borderRadius:'12px', border: srtRunning ? '1px solid rgba(255,70,70,0.45)' : '1px solid rgba(0,242,254,0.25)', background: srtRunning ? 'rgba(90,12,16,0.72)' : 'rgba(0,0,0,0.58)', color:'#fff', backdropFilter:'blur(14px)', boxShadow:'0 6px 18px rgba(0,0,0,0.2)', fontWeight:800, fontSize:'0.68rem', letterSpacing:'0.02em' }}>
+        {nativeSrtAvailable && <div style={{ position: 'absolute', top: '0.85rem', right: '8.1rem', zIndex: 31 }}>
+          <button type="button" onPointerDown={(e)=>e.stopPropagation()} onClick={() => setShowSrtPanel(v => !v)} aria-label="Buka pengaturan SRT" style={{ minWidth:'44px', height:'38px', padding:'0 0.7rem', borderRadius:'12px', border: srtRunning ? '1px solid rgba(255,70,70,0.45)' : '1px solid rgba(0,242,254,0.25)', background: srtRunning ? 'rgba(90,12,16,0.72)' : 'rgba(0,0,0,0.58)', color:'#fff', backdropFilter:'blur(14px)', boxShadow:'0 6px 18px rgba(0,0,0,0.2)', fontWeight:800, fontSize:'0.68rem', letterSpacing:'0.02em' }}>
             {srtRunning ? (srtReconnecting ? '🟠 SRT RETRY' : '🔴 SRT LIVE') : '📡 SRT'}
           </button>
           {showSrtPanel && (
-            <div className="glass-panel kdr-settings-sheet" style={{ position:'fixed', left:'0.7rem', right:'0.7rem', bottom:'0.7rem', top:'auto', maxHeight:'min(68vh, 620px)', overflowY:'auto', marginTop:0, padding:'1rem', borderRadius:'20px', background:'rgba(7,9,13,0.98)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 20px 60px rgba(0,0,0,0.55)', backdropFilter:'blur(22px)' }}>
+            <div onPointerDown={(e)=>e.stopPropagation()} className="glass-panel kdr-settings-sheet" style={{ position:'fixed', left:'0.7rem', right:'0.7rem', bottom:'max(0.7rem, env(safe-area-inset-bottom))', top:'auto', maxHeight:'min(68vh, 620px)', overflowY:'auto', marginTop:0, padding:'1rem', borderRadius:'20px', background:'rgba(7,9,13,0.98)', border:'1px solid rgba(255,255,255,0.12)', boxShadow:'0 20px 60px rgba(0,0,0,0.55)', backdropFilter:'blur(22px)' }}>
               <div style={{ display: 'grid', gap: '0.65rem' }}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',paddingBottom:'0.15rem'}}>
                   <div><div style={{fontSize:'0.82rem',fontWeight:900,color:'#fff'}}>📡 SRT OUTPUT</div><div style={{fontSize:'0.62rem',color:'rgba(255,255,255,0.48)',marginTop:'0.12rem'}}>Koneksi kamera → OBS • pengaturan tersimpan</div></div>
@@ -1485,12 +1485,12 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
 
         {/* Compact zoom controls — horizontal, outside the center camera area */}
         {(zoomSupported || focusSupported) && (
-          <div style={{position:'absolute',right:'0.85rem',bottom:'8.9rem',zIndex:22,display:'flex',alignItems:'center',gap:'0.28rem',padding:'0.3rem',borderRadius:'16px',background:'rgba(0,0,0,0.58)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',boxShadow:'0 8px 24px rgba(0,0,0,0.25)'}}>
+          <div style={{position:'absolute',right:'0.85rem',bottom:'8.0rem',zIndex:22,display:'flex',alignItems:'center',gap:'0.28rem',padding:'0.3rem',borderRadius:'16px',background:'rgba(0,0,0,0.58)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',boxShadow:'0 8px 24px rgba(0,0,0,0.25)'}}>
             {zoomSupported && (
               <>
-                <button type="button" onClick={()=>applyZoom(Math.max(zoomRange.min, zoomValue-zoomRange.step))} aria-label="Zoom out" title="Zoom out" style={{width:40,height:40,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍−</button>
+                <button type="button" onClick={()=>applyZoom(Math.max(zoomRange.min, zoomValue-zoomRange.step))} aria-label="Zoom out" title="Zoom out" style={{width:40,height:40,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍 −</button>
                 <div style={{minWidth:44,textAlign:'center',fontSize:'0.62rem',fontWeight:900,color:'#fff',fontFamily:'monospace'}}>{zoomValue.toFixed(1)}×</div>
-                <button type="button" onClick={()=>applyZoom(Math.min(zoomRange.max, zoomValue+zoomRange.step))} aria-label="Zoom in" title="Zoom in" style={{width:40,height:40,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍＋</button>
+                <button type="button" onClick={()=>applyZoom(Math.min(zoomRange.max, zoomValue+zoomRange.step))} aria-label="Zoom in" title="Zoom in" style={{width:40,height:40,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍 +</button>
               </>
             )}
             {focusSupported && (
@@ -1538,7 +1538,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
 
         {/* Professional camera control HUD */}
         {(exposureSupported || torchSupported) && !srtRunning && (
-          <div style={{position:'absolute',right:'0.85rem',bottom:'14.9rem',zIndex:20,display:'flex',alignItems:'center',gap:'0.35rem',padding:'0.28rem 0.35rem',borderRadius:'999px',background:'rgba(5,7,10,0.62)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(12px)',boxShadow:'0 8px 24px rgba(0,0,0,0.24)'}}>
+          <div style={{position:'absolute',right:'0.85rem',bottom:'16.2rem',zIndex:20,display:'flex',alignItems:'center',gap:'0.35rem',padding:'0.28rem 0.35rem',borderRadius:'999px',background:'rgba(5,7,10,0.62)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(12px)',boxShadow:'0 8px 24px rgba(0,0,0,0.24)'}}>
             {exposureSupported && (
               <div style={{display:'flex',alignItems:'center',gap:'0.25rem',padding:'0 0.25rem'}}>
                 <span style={{fontSize:'0.55rem',fontFamily:'monospace',color:'rgba(255,255,255,0.5)'}}>EV</span>
@@ -1552,20 +1552,25 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           </div>
         )}
 
-        {connectionMode === 'srt' && (
-          <div style={{position:'absolute',top:'14px',left:'50%',transform:'translateX(-50%)',zIndex:998,pointerEvents:'none',display:'flex',alignItems:'center',gap:'0.45rem',padding:'0.34rem 0.58rem',borderRadius:'999px',background:'rgba(0,0,0,0.5)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(8px)',fontFamily:'monospace',fontSize:'0.55rem',color:'rgba(255,255,255,0.78)'}}>
-            <span style={{width:7,height:7,borderRadius:'50%',background:srtHealth==='HEALTHY'?'#39e58c':srtHealth==='RECONNECTING'?'#ffd23f':'rgba(255,255,255,0.3)'}} />
-            SRT {srtHealth}
-          </div>
-        )}
-
         {/* Broadcast REC / timecode HUD */}
-        <div style={{position:'absolute',right:'0.85rem',bottom:'10.75rem',zIndex:19,pointerEvents:'none',display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.35rem'}}>
-          <div style={{display:'inline-flex',alignItems:'center',gap:'0.42rem',padding:'0.36rem 0.58rem',borderRadius:'10px',background:'rgba(0,0,0,0.52)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(10px)',fontFamily:'monospace',fontSize:'0.62rem',color:'#fff'}}>
-            <span style={{width:7,height:7,borderRadius:'50%',background:srtRunning?'#ff3030':'rgba(255,255,255,0.3)',boxShadow:srtRunning?'0 0 9px #ff3030':'none',animation:srtRunning?'kdrPulse 1s infinite':'none'}} />
-            <strong>{srtRunning ? 'REC' : 'READY'}</strong>
-          </div>
-          <div style={{display:'flex',gap:'0.35rem'}}>
+        <div style={{position:'absolute',right:'0.85rem',bottom:'11.9rem',zIndex:24,display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.35rem'}}>
+          <button
+            type="button"
+            onPointerDown={(e)=>e.stopPropagation()}
+            onClick={() => {
+              if (connectionMode === 'srt' && nativeSrtAvailable) {
+                if (srtRunning) stopNativeSrt();
+                else startNativeSrt();
+              }
+            }}
+            disabled={connectionMode === 'srt' && nativeSrtAvailable ? srtReconnecting : true}
+            aria-label={srtRunning ? 'Hentikan SRT' : 'Mulai SRT'}
+            title={connectionMode === 'srt' && nativeSrtAvailable ? (srtRunning ? 'Hentikan SRT' : 'Mulai SRT') : 'Status kamera'}
+            style={{display:'inline-flex',alignItems:'center',gap:'0.42rem',padding:'0.42rem 0.68rem',borderRadius:'12px',background:srtRunning?'rgba(120,10,16,0.78)':'rgba(0,0,0,0.56)',border:srtRunning?'1px solid rgba(255,70,70,0.42)':'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(10px)',fontFamily:'monospace',fontSize:'0.62rem',color:'#fff',fontWeight:800,boxShadow:'0 8px 22px rgba(0,0,0,0.24)',cursor:connectionMode === 'srt' && nativeSrtAvailable ? 'pointer' : 'default',opacity:(connectionMode === 'srt' && nativeSrtAvailable && srtReconnecting)?0.65:1}}>
+            <span style={{width:7,height:7,borderRadius:'50%',background:srtRunning?'#ff3030':'rgba(255,255,255,0.35)',boxShadow:srtRunning?'0 0 9px #ff3030':'none',animation:srtRunning?'kdrPulse 1s infinite':'none'}} />
+            <strong>{srtRunning ? 'REC • STOP' : 'READY • START'}</strong>
+          </button>
+          <div style={{display:'flex',gap:'0.35rem',pointerEvents:'none'}}>
             <span style={{padding:'0.3rem 0.48rem',borderRadius:'9px',background:'rgba(0,0,0,0.48)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(8px)',fontFamily:'monospace',fontSize:'0.58rem',color:'rgba(255,255,255,0.78)'}}>TC {formatTimecode(srtRuntime)}</span>
             <span style={{padding:'0.3rem 0.48rem',borderRadius:'9px',background:'rgba(0,0,0,0.48)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(8px)',fontFamily:'monospace',fontSize:'0.58rem',color:'rgba(255,255,255,0.78)'}}>F {frameCount}</span>
           </div>
@@ -1620,6 +1625,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           .kdr-settings-sheet { animation:kdrSheetIn .18s ease-out; }
           .kdr-tap { transition:transform .12s ease, opacity .12s ease; }
           .kdr-tap:active { transform:scale(.96); opacity:.88; }
+          .kdr-camera-controls button,.kdr-camera-controls select,.kdr-camera-controls input,.kdr-settings-sheet button,.kdr-settings-sheet select,.kdr-settings-sheet input { touch-action:manipulation; }
           .kdr-camera-controls,.kdr-camera-stats { opacity:1; transform:translateY(0); transition:opacity .22s ease, transform .22s ease; }
           .kdr-camera-controls.kdr-controls-hidden,.kdr-camera-stats.kdr-controls-hidden { opacity:0; transform:translateY(16px); pointer-events:none; }
           .kdr-camera-controls .mobile-btn-circle { width:48px !important; height:48px !important; min-width:48px; min-height:48px; border-width:1.5px; box-shadow:0 3px 12px rgba(0,0,0,.28); }
@@ -1687,24 +1693,6 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           </div>
         )}
 
-        {/* Primary LIVE control */}
-        {connectionMode === 'srt' && nativeSrtAvailable && (
-          <div style={{position:'absolute',bottom:'11.9rem',left:'50%',transform:'translateX(-50%)',zIndex:20}}>
-            <button type="button" onClick={srtRunning ? stopNativeSrt : startNativeSrt} disabled={srtReconnecting}
-              style={{minWidth:'150px',height:'48px',padding:'0 1.1rem',borderRadius:'24px',border:'2px solid rgba(255,255,255,0.22)',background:srtRunning ? 'rgba(190,35,35,0.92)' : 'rgba(18,18,22,0.88)',color:'#fff',fontWeight:900,fontSize:'0.86rem',letterSpacing:'0.04em',boxShadow:srtRunning ? '0 0 22px rgba(255,60,60,0.32)' : '0 8px 24px rgba(0,0,0,0.35)',backdropFilter:'blur(10px)',opacity:srtReconnecting?0.65:1}}>
-              <span style={{display:'inline-flex',alignItems:'center',gap:'0.45rem'}}>
-                <span style={{width:10,height:10,borderRadius:'50%',background:srtRunning?'#ff4d4d':'#fff',boxShadow:srtRunning?'0 0 10px #ff4d4d':'none'}} />
-                {srtRunning ? (srtReconnecting ? 'RECONNECTING' : 'STOP LIVE') : 'START LIVE'}
-              </span>
-            </button>
-            <div style={{display:'flex',justifyContent:'center',alignItems:'center',gap:'0.42rem',marginTop:'0.32rem',fontSize:'0.6rem',color:'rgba(255,255,255,0.7)',fontFamily:'monospace'}}>
-              <span style={{padding:'0.18rem 0.42rem',borderRadius:'999px',background:'rgba(0,0,0,0.46)',border:'1px solid rgba(255,255,255,0.08)'}}>
-                {srtRunning ? ('SRT • ' + Math.round(Number(srtBitrate)/1000000) + ' Mbps') : 'SRT → OBS'}
-              </span>
-              {srtRunning && <span style={{padding:'0.18rem 0.42rem',borderRadius:'999px',background:'rgba(0,0,0,0.46)',border:'1px solid rgba(255,255,255,0.08)'}}>{formatSrtDuration(srtRuntime)}</span>}
-            </div>
-          </div>
-        )}
         {/* Bottom controls */}
         <div className="mobile-footer">
           {/* Active stats */}
