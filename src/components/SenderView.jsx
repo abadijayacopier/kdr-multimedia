@@ -1483,20 +1483,18 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           )}
         </div>}
 
-        {/* Camera quick controls */}
+        {/* Compact zoom controls — moved off the center camera area */}
         {(zoomSupported || focusSupported) && (
-          <div style={{position:'absolute',left:'50%',transform:'translateX(-50%)',bottom:'8.9rem',zIndex:18,display:'flex',alignItems:'center',gap:'0.45rem',padding:'0.4rem 0.55rem',borderRadius:'14px',background:'rgba(0,0,0,0.58)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.12)'}}>
+          <div style={{position:'absolute',right:'0.85rem',bottom:'8.9rem',zIndex:22,display:'flex',flexDirection:'column',alignItems:'center',gap:'0.28rem',padding:'0.3rem',borderRadius:'16px',background:'rgba(0,0,0,0.58)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.12)',boxShadow:'0 8px 24px rgba(0,0,0,0.25)'}}>
             {zoomSupported && (
               <>
-                <button type="button" onClick={()=>applyZoom(Math.max(zoomRange.min, zoomValue-zoomRange.step))} style={{width:32,height:32,border:0,borderRadius:10,background:'rgba(255,255,255,0.12)',color:'#fff',fontSize:'1.1rem'}}>−</button>
-                <div style={{minWidth:44,textAlign:'center',fontSize:'0.72rem',fontWeight:800,color:'#fff'}}>{zoomValue.toFixed(1)}×</div>
-                <button type="button" onClick={()=>applyZoom(Math.min(zoomRange.max, zoomValue+zoomRange.step))} style={{width:32,height:32,border:0,borderRadius:10,background:'rgba(255,255,255,0.12)',color:'#fff',fontSize:'1.1rem'}}>+</button>
+                <button type="button" onClick={()=>applyZoom(Math.min(zoomRange.max, zoomValue+zoomRange.step))} aria-label="Zoom in" title="Zoom in" style={{width:38,height:38,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍＋</button>
+                <div style={{minWidth:42,textAlign:'center',fontSize:'0.62rem',fontWeight:900,color:'#fff',fontFamily:'monospace'}}>{zoomValue.toFixed(1)}×</div>
+                <button type="button" onClick={()=>applyZoom(Math.max(zoomRange.min, zoomValue-zoomRange.step))} aria-label="Zoom out" title="Zoom out" style={{width:38,height:38,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.92rem',fontWeight:900}}>🔍−</button>
               </>
             )}
             {focusSupported && (
-              <select value={currentFocusMode} onChange={e=>applyFocusMode(e.target.value)} style={{height:32,maxWidth:115,borderRadius:10,border:'1px solid rgba(255,255,255,0.14)',background:'rgba(0,0,0,0.45)',color:'#fff',padding:'0 0.4rem',fontSize:'0.68rem'}}>
-                {focusModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
-              </select>
+              <button type="button" onClick={() => { const modes = focusModes.length ? focusModes : ['continuous']; const idx = Math.max(0,modes.indexOf(currentFocusMode)); applyFocusMode(modes[(idx+1)%modes.length]); }} aria-label="Ganti mode fokus" title="Mode fokus" style={{width:38,height:38,border:'1px solid rgba(255,255,255,0.12)',borderRadius:'50%',background:'rgba(255,255,255,0.1)',color:'#fff',fontSize:'0.9rem'}}>◎</button>
             )}
           </div>
         )}
@@ -1557,10 +1555,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         {/* Professional lens HUD */}
         {(zoomSupported || focusSupported) && !srtRunning && (
           <div style={{position:'absolute',left:'50%',bottom:'14.9rem',transform:'translateX(-50%)',zIndex:20,display:'flex',alignItems:'center',gap:'0.35rem',padding:'0.28rem 0.35rem',borderRadius:'999px',background:'rgba(5,7,10,0.62)',border:'1px solid rgba(255,255,255,0.12)',backdropFilter:'blur(12px)',boxShadow:'0 8px 24px rgba(0,0,0,0.24)'}}>
-            {zoomSupported && [1, 2, 4].filter((v) => v >= zoomRange.min && v <= zoomRange.max).map((v) => (
-              <button key={v} type="button" onClick={() => applyZoom(v)} className="kdr-lens-pill kdr-tap" style={{minWidth:'38px',height:'30px',padding:'0 0.5rem',border:0,borderRadius:'999px',background:Math.abs(zoomValue-v)<0.05?'rgba(0,242,254,0.22)':'rgba(255,255,255,0.08)',color:Math.abs(zoomValue-v)<0.05?'#fff':'rgba(255,255,255,0.7)',fontSize:'0.62rem',fontWeight:800,fontFamily:'monospace'}}>{v}×</button>
-            ))}
-            {zoomSupported && <span style={{fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.48)',padding:'0 0.18rem'}}>{zoomValue.toFixed(1)}×</span>}
+            {zoomSupported && <span style={{fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.48)',padding:'0 0.18rem'}}>ZOOM {zoomValue.toFixed(1)}×</span>}
             {focusSupported && <button type="button" onClick={() => { const modes = focusModes.length ? focusModes : ['continuous']; const idx = Math.max(0,modes.indexOf(currentFocusMode)); applyFocusMode(modes[(idx+1)%modes.length]); }} className="kdr-lens-pill kdr-tap" style={{height:'30px',padding:'0 0.62rem',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'999px',background:'rgba(255,255,255,0.08)',color:'#fff',fontSize:'0.58rem',fontWeight:800,fontFamily:'monospace'}}><span style={{marginRight:'0.25rem'}}>◎</span>{({continuous:'AF-C',single:'AF-S',manual:'MF'}[currentFocusMode] || String(currentFocusMode || 'AUTO').toUpperCase())}</button>}
           </div>
         )}
