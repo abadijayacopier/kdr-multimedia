@@ -1291,7 +1291,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             <div>NET: {networkType}</div>
           </div>
 
-          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+          <div style={{display:'flex',gap:'0.55rem',alignItems:'center',justifyContent:'center',width:'100%',padding:'0.28rem 0.4rem',borderRadius:'22px',background:'rgba(0,0,0,0.34)',border:'1px solid rgba(255,255,255,0.08)',backdropFilter:'blur(10px)'}}>
             <button
               onClick={() => {
                 const nextAudio = !isAudioEnabled;
@@ -1308,7 +1308,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
               title="Toggle Microphone"
               style={{ backgroundColor: isAudioEnabled ? 'var(--accent-green)' : 'rgba(255, 255, 255, 0.15)' }}
             >
-              <span style={{ fontSize: '1.4rem' }}>{isAudioEnabled ? '🎙️' : '🔇'}</span>
+              <span style={{ fontSize: '1.25rem' }}>{isAudioEnabled ? '🎙️' : '🔇'}</span>
             </button>
 
             {/* Screen Share / Torch toggle */}
@@ -1318,7 +1318,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
                 className={`mobile-btn-circle ${torchOn ? 'active' : ''}`}
                 title="Toggle Flashlight"
               >
-                <span style={{ fontSize: '1.4rem' }}>🔦</span>
+                <span style={{ fontSize: '1.25rem' }}>🔦</span>
               </button>
             ) : (
               <button
@@ -1345,10 +1345,10 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
             <button
               onClick={toggleCameraLocal}
               className="mobile-btn-circle"
-              style={{ width: '72px', height: '72px', background: 'rgba(255, 255, 255, 0.2)' }}
+              style={{ width: '58px', height: '58px', background: 'rgba(255, 255, 255, 0.18)', boxShadow:'0 4px 16px rgba(0,0,0,0.22)' }}
               title="Flip Camera"
             >
-              <span style={{ fontSize: '1.8rem' }}>🔄</span>
+              <span style={{ fontSize: '1.45rem' }}>🔄</span>
             </button>
 
             {/* Pause toggle button */}
@@ -1358,7 +1358,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
               style={{ backgroundColor: isPaused ? 'var(--accent-red)' : 'rgba(255, 255, 255, 0.15)' }}
               title={isPaused ? 'Mulai Streaming' : 'Tangguhkan Streaming'}
             >
-              <span style={{ fontSize: '1.4rem' }}>{isPaused ? '▶️' : '⏸️'}</span>
+              <span style={{ fontSize: '1.25rem' }}>{isPaused ? '▶️' : '⏸️'}</span>
             </button>
           </div>
 
