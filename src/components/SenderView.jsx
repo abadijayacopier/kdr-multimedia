@@ -28,6 +28,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const [batteryCharging, setBatteryCharging] = useState(false);
   const [networkType, setNetworkType] = useState('NET');
   const [networkQuality, setNetworkQuality] = useState('');
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [audioPeak, setAudioPeak] = useState(0);
   const [srtRunning, setSrtRunning] = useState(false);
   const [srtReconnecting, setSrtReconnecting] = useState(false);
   const [srtError, setSrtError] = useState(null);
@@ -111,6 +113,65 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   const pcRef = useRef(null);
   const queuedCandidatesRef = useRef([]);
   const wakeLockRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const audioAnalyserRef = useRef(null);
+  const audioFrameRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const stream = streamRef.current;
+    const audioTrack = stream?.getAudioTracks?.()[0];
+    if (!audioTrack || !isAudioEnabled) {
+      setAudioLevel(0);
+      setAudioPeak(0);
+      return undefined;
+    }
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return undefined;
+      const ctx = audioContextRef.current || new AudioCtx();
+      audioContextRef.current = ctx;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.72;
+      const source = ctx.createMediaStreamSource(stream);
+      source.connect(analyser);
+      audioAnalyserRef.current = analyser;
+      const data = new Uint8Array(analyser.fftSize);
+      let peakHold = 0;
+      const tick = () => {
+        if (cancelled) return;
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / data.length);
+        const level = Math.min(1, Math.max(0, rms * 3.2));
+        peakHold = Math.max(level, peakHold * 0.94);
+        setAudioLevel(level);
+        setAudioPeak(peakHold);
+        audioFrameRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (_) {
+      setAudioLevel(0);
+      setAudioPeak(0);
+    }
+    return () => {
+      cancelled = true;
+      if (audioFrameRef.current) cancelAnimationFrame(audioFrameRef.current);
+      audioFrameRef.current = null;
+      audioAnalyserRef.current = null;
+    };
+  }, [isAudioEnabled, streamRef.current]);
+
+  useEffect(() => () => {
+    if (audioFrameRef.current) cancelAnimationFrame(audioFrameRef.current);
+    if (audioContextRef.current) audioContextRef.current.close().catch(() => {});
+  }, []);
 
   const formatSrtDuration = (ms) => {
     const total = Math.floor(Math.max(0, ms) / 1000);
@@ -1275,6 +1336,24 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           </div>
         </div>
 
+        {/* Audio level monitor */}
+        {isAudioEnabled && (
+          <div style={{position:'absolute',left:'0.72rem',bottom:'10.8rem',zIndex:19,pointerEvents:'none',display:'flex',alignItems:'center',gap:'0.42rem',padding:'0.48rem 0.42rem',borderRadius:'12px',background:'rgba(0,0,0,0.5)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(10px)'}}>
+            <div style={{display:'flex',flexDirection:'column',justifyContent:'space-between',height:'66px',fontSize:'0.5rem',fontFamily:'monospace',color:'rgba(255,255,255,0.42)',textAlign:'right'}}>
+              <span>0</span><span>-6</span><span>-12</span><span>-24</span>
+            </div>
+            <div style={{position:'relative',width:'10px',height:'66px',borderRadius:'6px',background:'rgba(255,255,255,0.1)',overflow:'hidden'}}>
+              <div style={{position:'absolute',left:0,right:0,bottom:0,height:(audioLevel*100)+'%',background:audioLevel>0.82?'#ff3b3b':audioLevel>0.62?'#ffd23f':'#39e58c',borderRadius:'6px',transition:'height .06s linear'}} />
+              <div style={{position:'absolute',left:'-2px',right:'-2px',bottom:(audioPeak*100)+'%',height:'2px',background:'#fff',boxShadow:'0 0 5px rgba(255,255,255,0.8)'}} />
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:'0.18rem',fontSize:'0.52rem',fontFamily:'monospace',color:'rgba(255,255,255,0.68)'}}>
+              <span style={{fontWeight:900,color:'#fff'}}>AUDIO</span>
+              <span>{audioLevel>0.82?'PEAK':audioLevel>0.62?'HOT':'OK'}</span>
+              <span>{Math.round(audioLevel*100)}%</span>
+            </div>
+          </div>
+        )}
+
         {/* Center status message */}
         <div style={{ alignSelf: 'center', width: '100%', display: 'flex', justifyContent: 'center' }}>
           <div className="mobile-status-toast">
@@ -1326,6 +1405,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           .kdr-corner-bl { bottom:8%; left:5%; border-bottom:2px solid; border-left:2px solid; border-radius:0 0 0 4px; }
           .kdr-corner-br { bottom:8%; right:5%; border-bottom:2px solid; border-right:2px solid; border-radius:0 0 4px 0; }
           .kdr-live-badge { animation:kdrLiveIn .2s ease-out; }
+          @keyframes kdrMeterGlow { 0%,100% { opacity:.82; } 50% { opacity:1; } }
+          .kdr-audio-meter { animation:kdrMeterGlow 1.1s ease-in-out infinite; }
           @keyframes kdrLiveIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
         `}</style>
 
