@@ -1254,13 +1254,18 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         </div>
 
         {/* Live / Tally status strip */}
-        <div style={{position:'absolute',top:'5.9rem',left:'1rem',right:'1rem',zIndex:19,display:'flex',justifyContent:'space-between',alignItems:'center',pointerEvents:'none'}}>
-          <div style={{display:'inline-flex',alignItems:'center',gap:'0.45rem',padding:'0.32rem 0.58rem',borderRadius:'10px',background:'rgba(0,0,0,0.52)',backdropFilter:'blur(8px)',fontSize:'0.66rem',fontWeight:800,color:'#fff',letterSpacing:'0.04em'}}>
-            <span style={{width:8,height:8,borderRadius:'50%',background:srtRunning?'#ff3b3b':'rgba(255,255,255,0.35)',boxShadow:srtRunning?'0 0 12px #ff3b3b':'none',animation:srtRunning?'kdrPulse 1.2s infinite':'none'}} />
-            {srtRunning ? (srtReconnecting ? 'RECONNECTING' : 'LIVE') : 'STANDBY'}
+        <div style={{position:'absolute',top:'5.65rem',left:'0.85rem',right:'0.85rem',zIndex:19,display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'0.55rem',pointerEvents:'none'}}>
+          <div className="kdr-live-badge" style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',padding:'0.42rem 0.7rem',borderRadius:'12px',background:srtRunning?'rgba(105,10,15,0.78)':'rgba(0,0,0,0.54)',border:srtRunning?'1px solid rgba(255,80,80,0.38)':'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(12px)',boxShadow:srtRunning?'0 8px 24px rgba(255,35,35,0.16)':'0 8px 24px rgba(0,0,0,0.18)',color:'#fff'}}>
+            <span style={{width:9,height:9,borderRadius:'50%',background:srtRunning?'#ff3b3b':'rgba(255,255,255,0.35)',boxShadow:srtRunning?'0 0 13px #ff3b3b':'none',animation:srtRunning?'kdrPulse 1.1s infinite':'none'}} />
+            <span style={{fontSize:'0.7rem',fontWeight:900,letterSpacing:'0.08em'}}>{srtRunning ? (srtReconnecting ? 'RECONNECTING' : 'LIVE') : 'STANDBY'}</span>
+            {srtRunning && <span style={{fontSize:'0.62rem',fontFamily:'monospace',color:'rgba(255,255,255,0.72)',paddingLeft:'0.25rem',borderLeft:'1px solid rgba(255,255,255,0.16)'}}>{formatSrtDuration(srtRuntime)}</span>}
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'0.35rem',padding:'0.38rem 0.58rem',borderRadius:'12px',background:'rgba(0,0,0,0.5)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(10px)',fontSize:'0.6rem',fontFamily:'monospace',color:'rgba(255,255,255,0.8)'}}>
+            <span style={{fontSize:'0.7rem'}}>▮▮▮</span>
+            {networkType}
           </div>
           {srtError && (
-            <div style={{maxWidth:'62%',padding:'0.32rem 0.58rem',borderRadius:'10px',background:'rgba(120,0,0,0.72)',fontSize:'0.62rem',fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+            <div style={{position:'absolute',top:'2.65rem',left:0,right:0,padding:'0.38rem 0.6rem',borderRadius:'10px',background:'rgba(120,0,0,0.82)',border:'1px solid rgba(255,80,80,0.24)',fontSize:'0.62rem',fontWeight:700,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
               ⚠ {srtError}
             </div>
           )}
@@ -1272,6 +1277,8 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
           .kdr-settings-sheet { animation:kdrSheetIn .18s ease-out; }
           .kdr-tap { transition:transform .12s ease, opacity .12s ease; }
           .kdr-tap:active { transform:scale(.96); opacity:.88; }
+          .kdr-live-badge { animation:kdrLiveIn .2s ease-out; }
+          @keyframes kdrLiveIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
         `}</style>
 
         {/* Camera settings bottom sheet */}
@@ -1306,8 +1313,11 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
                 {srtRunning ? (srtReconnecting ? 'RECONNECTING' : 'STOP LIVE') : 'START LIVE'}
               </span>
             </button>
-            <div style={{textAlign:'center',marginTop:'0.28rem',fontSize:'0.62rem',color:'rgba(255,255,255,0.68)',fontFamily:'monospace'}}>
-              {srtRunning ? (String(Math.floor(srtRuntime/60000)).padStart(2,'0') + ':' + String(Math.floor((srtRuntime/1000)%60)).padStart(2,'0') + ' • ' + Math.round(Number(srtBitrate)/1000000) + ' Mbps') : 'SRT → OBS'}
+            <div style={{display:'flex',justifyContent:'center',alignItems:'center',gap:'0.42rem',marginTop:'0.32rem',fontSize:'0.6rem',color:'rgba(255,255,255,0.7)',fontFamily:'monospace'}}>
+              <span style={{padding:'0.18rem 0.42rem',borderRadius:'999px',background:'rgba(0,0,0,0.46)',border:'1px solid rgba(255,255,255,0.08)'}}>
+                {srtRunning ? ('SRT • ' + Math.round(Number(srtBitrate)/1000000) + ' Mbps') : 'SRT → OBS'}
+              </span>
+              {srtRunning && <span style={{padding:'0.18rem 0.42rem',borderRadius:'999px',background:'rgba(0,0,0,0.46)',border:'1px solid rgba(255,255,255,0.08)'}}>{formatSrtDuration(srtRuntime)}</span>}
             </div>
           </div>
         )}
