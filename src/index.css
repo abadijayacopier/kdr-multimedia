@@ -367,7 +367,8 @@ h1, h2, h3, h4 {
 
 /* Mobile App View */
 .mobile-view {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: #020304;
@@ -400,12 +401,14 @@ h1, h2, h3, h4 {
 }
 
 .mobile-header {
+  padding-top: max(0.7rem, env(safe-area-inset-top));
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .mobile-footer {
+  padding-bottom: max(0.8rem, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 1rem;
