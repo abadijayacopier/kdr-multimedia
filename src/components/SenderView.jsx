@@ -462,7 +462,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
   };
 
   useEffect(() => {
-    if (!srtRunning) return;
+    if (connectionMode !== 'srt') return;
     const timer = setInterval(async () => {
       try {
         const result = await KdrSrt.status();
@@ -478,7 +478,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
       } catch (_) {}
     }, 1500);
     return () => clearInterval(timer);
-  }, [srtRunning]);
+  }, [connectionMode]);
 
   useEffect(() => {
     if (!srtRunning || !srtStartedAt) {
