@@ -1544,7 +1544,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
               <button key={v} type="button" onClick={() => applyZoom(v)} className="kdr-lens-pill kdr-tap" style={{minWidth:'38px',height:'30px',padding:'0 0.5rem',border:0,borderRadius:'999px',background:Math.abs(zoomValue-v)<0.05?'rgba(0,242,254,0.22)':'rgba(255,255,255,0.08)',color:Math.abs(zoomValue-v)<0.05?'#fff':'rgba(255,255,255,0.7)',fontSize:'0.62rem',fontWeight:800,fontFamily:'monospace'}}>{v}×</button>
             ))}
             {zoomSupported && <span style={{fontSize:'0.58rem',fontFamily:'monospace',color:'rgba(255,255,255,0.48)',padding:'0 0.18rem'}}>{zoomValue.toFixed(1)}×</span>}
-            {focusSupported && <button type="button" onClick={() => { const modes = focusModes.length ? focusModes : ['continuous']; const idx = Math.max(0,modes.indexOf(currentFocusMode)); applyFocusMode(modes[(idx+1)%modes.length]); }} className="kdr-lens-pill kdr-tap" style={{height:'30px',padding:'0 0.62rem',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'999px',background:'rgba(255,255,255,0.08)',color:'#fff',fontSize:'0.58rem',fontWeight:800,fontFamily:'monospace'}}><span style={{marginRight:'0.25rem'}}>◎</span>{String(currentFocusMode || 'AUTO').toUpperCase()}</button>}
+            {focusSupported && <button type="button" onClick={() => { const modes = focusModes.length ? focusModes : ['continuous']; const idx = Math.max(0,modes.indexOf(currentFocusMode)); applyFocusMode(modes[(idx+1)%modes.length]); }} className="kdr-lens-pill kdr-tap" style={{height:'30px',padding:'0 0.62rem',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'999px',background:'rgba(255,255,255,0.08)',color:'#fff',fontSize:'0.58rem',fontWeight:800,fontFamily:'monospace'}}><span style={{marginRight:'0.25rem'}}>◎</span>{({continuous:'AF-C',single:'AF-S',manual:'MF'}[currentFocusMode] || String(currentFocusMode || 'AUTO').toUpperCase())}</button>}
           </div>
         )}
 
@@ -1706,7 +1706,7 @@ export default function SenderView({ roomId, roomPin, connectionMode = 'network'
         <div className="mobile-footer">
           {/* Active stats */}
           <div className={showCameraControls ? 'kdr-camera-stats' : 'kdr-camera-stats kdr-controls-hidden'} style={{ display: 'flex', gap: '0.58rem', alignItems:'center', background: 'rgba(0, 0, 0, 0.56)', padding: '0.34rem 0.58rem', borderRadius: '12px', fontSize: '0.58rem', fontFamily: 'monospace', color: 'rgba(255,255,255,0.82)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter:'blur(12px)', maxWidth:'calc(100vw - 1.2rem)', overflow:'hidden', whiteSpace:'nowrap' }}>
-            <div>CAM: {activeCamera === 'screen' ? 'LAYAR' : (activeCamera === 'environment' ? 'BELAKANG' : 'DEPAN')}</div>
+            <div>CAM: {activeCamera === 'screen' ? 'SCREEN' : (activeCamera === 'environment' ? 'BACK' : 'FRONT')}</div>
             <div>RES: {activeResolution}</div>
             <div>FPS: {activeFps}</div>
             <div>NET: {networkType}</div>
