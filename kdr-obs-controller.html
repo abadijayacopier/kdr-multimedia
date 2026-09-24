@@ -116,7 +116,7 @@ let ws=null,rid=1,pending=new Map(),refreshTimer=null;
 const $=id=>document.getElementById(id);
 function log(x){$('log').innerHTML+='['+new Date().toLocaleTimeString()+'] '+x+'<br>';$('log').scrollTop=999999} function toast(x){const t=$('toast');t.textContent=x;t.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.classList.remove('show'),2200)}
 function setConn(ok){$('conn').innerHTML='<span class="connection-dot '+(ok?'online':'')+'"></span>'+(ok?'TERHUBUNG':'OFFLINE');$('conn').style.color=ok?'#55e39b':'';$('sidebarConn').textContent=ok?'Connected':'Offline';$('obsState')&&($('obsState').textContent=ok?'Connected':'Offline');}
-function setButtons(ok){['startStream','stopStream','startRecord','stopRecord','mute','unmute'].forEach(id=>$(id).disabled=!ok)}
+function setButtons(ok){['startStream','stopStream','startRecord','stopRecord','mute','unmute'].forEach(id=>$(id).disabled=!ok)} function syncPageStates(){$('streamPageState').textContent=$('stream').textContent;$('recordPageState').textContent=$('record').textContent}
 function call(type,data={}){return new Promise((resolve,reject)=>{if(!ws||ws.readyState!==WebSocket.OPEN)return reject(Error('OBS belum terhubung'));const id=String(rid++);pending.set(id,{resolve,reject});ws.send(JSON.stringify({op:6,d:{requestType:type,requestId:id,requestData:data}}));setTimeout(()=>{if(pending.has(id)){pending.delete(id);reject(Error('Timeout: '+type))}},8000)})}
 function bytesToBase64(bytes){let s='';for(const b of new Uint8Array(bytes))s+=String.fromCharCode(b);return btoa(s)}
 async function sha256Base64(text){return bytesToBase64(await window.crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))}
@@ -261,8 +261,6 @@ updateCameraMode();
 $('createSrt').onclick=()=>ensureSrtSource().catch(e=>log(e.message));
 $('refreshSrt').onclick=refreshSrtSource;
 setButtons(false);log('KDR OBS Controller siap.');refreshSrtQr();
-</script></body></html>
-<script>
 $('refreshAll').onclick=()=>refresh();
 $('refreshPreview').onclick=()=>refreshPreview();
-</script>
+</script></body></html>
